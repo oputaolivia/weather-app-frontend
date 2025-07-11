@@ -1,18 +1,27 @@
-import React from 'react';
+import React, { useState} from 'react';
 import { useWeather } from '../contexts/WeatherContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import WeatherCard from '../components/WeatherCard';
 import CropAdvisoryCard from '../components/CropAdvisoryCard';
 
 const Home = () => {
-  const { weatherData, cropAdvisory, loading, error } = useWeather();
+  const { weatherData, cropAdvisory, loading, error, location } = useWeather();
+  console.log(location)
   const { t } = useLanguage();
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-green-900">FarmWeather Nigeria</h1>
+        <div className="flex flex-col">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-900">
+            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, Username
+          </h1>
+
+          <p className="text-sm sm:text-base md:text-lg text-green-800">
+              Surulere, Lagos, Nigeria
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <button className="btn btn-sm bg-blue-100 text-blue-700 rounded px-3 py-1">
             🔊 {t('audioAlerts') || 'Audio Alerts'}
