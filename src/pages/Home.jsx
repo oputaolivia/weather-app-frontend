@@ -1,13 +1,14 @@
 import React, { useState} from 'react';
 import { useWeather } from '../contexts/WeatherContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUser } from '../contexts/UserContext';
 import WeatherCard from '../components/WeatherCard';
 import CropAdvisoryCard from '../components/CropAdvisoryCard';
 
 const Home = () => {
   const { weatherData, cropAdvisory, loading, error, location } = useWeather();
-  console.log(location)
   const { t } = useLanguage();
+  const { user } = useUser() // to be used to access user's name for the salutations. Not yet available.
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
