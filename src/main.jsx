@@ -5,13 +5,17 @@ import App from './App.jsx'
 import './index.css';
 import { WeatherProvider } from './contexts/WeatherContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { UserProvider } from './contexts/UserContext';
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <WeatherProvider>
-      <LanguageProvider>
-        <App />
-      </LanguageProvider>
-    </WeatherProvider>
+    <UserProvider>
+      <WeatherProvider>
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
+      </WeatherProvider>
+    </UserProvider>
   </StrictMode>,
 )
