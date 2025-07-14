@@ -1,66 +1,63 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../contexts/UserContext'
+import { useUser } from '../contexts/UserContext';
+import { signInUser } from '../services/userService';
 
 const SignIn = () => {
-  const email = useRef(null);
-  const password = useRef(null);
-  const [inputEmptyState, setInputEmptyState] = useState(false);
+  const [formData, setFormData] = useState({
+    identifier: '',
+    password: ''
+  });
+
   const [disableButton, setDisableButton] = useState(false);
-  const [signInErrorMessage, setSignInErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
   const { setUser } = useUser();
 
-  // Accessing the API
-  const getSignInData = async () => {
-    const endpoint = 'https://weather-app-backend-fdzb.onrender.com/users/auth';
-    const userInput = {
-      email: email.current.value,
-      password: password.current.value
-    };
-
-    const apiCall = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userInput),
-    };
-
-    try {
-      const response = await fetch(endpoint, apiCall);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || `Server Error: ${response.status}`);
-      }
-
-      return data;
-    } catch (error) {
-      // An alert message that disappears after 10seconds if there is an error signing in
-      setErrorMessage(error.message || 'Oops! Sign-in failed.');
-      setTimeout(() => setErrorMessage(''), 10000);
-      return null;
-    }
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Setting the onclick function for the submit buttom.
-  const submitButtonSignIn = async () => {
-    const emailVal = email.current.value.trim();
-    const passwordVal = password.current.value.trim();
+  const validateInputs = () => {
+    const { identifier, password } = formData;
 
-    if (!emailVal || !passwordVal) {
-      setInputEmptyState(true)
-      return;
+    if (!identifier || !password) {
+      setErrorMessage('Email/Phone and password are required.');
+      return false;
     }
 
-    setInputEmptyState(false)
-    setDisableButton(true);
-    const signInData = await getSignInData();
+    const isEmail = /\S+@\S+\.\S+/.test(identifier);
+    const isPhone = /^\d{11,13}$/.test(identifier);
 
-    if (signInData.status === 200) {
-      setUser(signInData)
-      navigate('/')
-    } else{
-      setDisableButton(false)
+    if (!isEmail && !isPhone) {
+      setErrorMessage('Enter a valid email or phone number.');
+      return false;
+    }
+    return true;
+  };
+
+  const submitButtonSignIn = async () => {
+    setErrorMessage('');
+
+    if (!validateInputs()) return;
+
+    setDisableButton(true);
+    const { identifier, password } = formData;
+    const payload = {password};
+
+    if (/\S+@\S+\.\S+/.test(identifier)) {
+      payload.email = identifier;
+    } else {
+      payload.phoneNumber = identifier;
+    }
+    try {
+      const data = await signInUser(payload);
+      setUser(data);
+      navigate('/');
+    } catch (error) {
+      setErrorMessage(error.message || 'Oops! Sign-in failed.');
+    } finally {
+      setDisableButton(false);
     }
   };
 
@@ -74,18 +71,27 @@ const SignIn = () => {
           </div>
         )} */}
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); submitButtonSignIn(); }}>
-          {inputEmptyState && (
-            <p className="text-sm text-red-600 font-medium mb-2">
-              Email and password are required.
-            </p>
-          )}
           <div>
-            <label className="block mb-1 font-semibold">Email</label>
-            <input ref={email} type="email" className="w-full border rounded px-3 py-2" placeholder="Enter your email" />
+            <label className="block mb-1 font-semibold">Email or Phone Number</label>
+            <input
+              name="identifier"
+              value={formData.identifier}
+              onChange={handleChange}
+              type='text'
+              className="w-full border rounded px-3 py-2"
+              placeholder="Enter your email or phone number"
+            />
           </div>
           <div>
             <label className="block mb-1 font-semibold">Password</label>
-            <input ref={password} type="password" className="w-full border rounded px-3 py-2" placeholder="Enter your password" />
+            <input
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              type="password"
+              className="w-full border rounded px-3 py-2"
+              placeholder="Enter your password"
+            />
           </div>
           <button
             type="submit"
