@@ -86,7 +86,7 @@ const Home = () => {
       <header className="flex items-center justify-between mb-6">
         <div className="flex flex-col">
           <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-900">
-            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, Username
+            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {user.firstName || 'Username'}
           </h1>
 
           <p className="text-sm sm:text-base md:text-lg text-green-800">
