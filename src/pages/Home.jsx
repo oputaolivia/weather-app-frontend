@@ -1,6 +1,7 @@
 import React, { useState} from 'react';
 import { useWeather } from '../contexts/WeatherContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUser } from '../contexts/UserContext';
 import WeatherCard from '../components/WeatherCard';
 import CropAdvisoryCard from '../components/CropAdvisoryCard';
 
