@@ -72,14 +72,14 @@ const SignIn = () => {
         )}
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); submitButtonSignIn(); }}>
           <div>
-            <label className="block mb-1 font-semibold">Email</label>
+            <label className="block mb-1 font-semibold">Email or Phone Number</label>
             <input
               name="identifier"
               value={formData.identifier}
               onChange={handleChange}
               type='text'
               className="w-full border rounded px-3 py-2"
-              placeholder="Enter your email"
+              placeholder="Enter your email or phone number"
             />
           </div>
           <div>
