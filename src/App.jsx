@@ -7,14 +7,14 @@ import Profile from './pages/Profile';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import './App.css';
-import Navbar from './components/Navbar';
+import { NavigationBar, BottomNavigation } from './components/Navbar';
 
 function App() {
 
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+      <NavigationBar />
 
         <Routes>
           <Route path="/" element={<Home />} />
@@ -24,6 +24,8 @@ function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
         </Routes>
+        <BottomNavigation />
+
       </div>
     </Router>
   );
