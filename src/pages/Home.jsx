@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Cloud, 
   CloudSun, 
@@ -25,26 +25,30 @@ import {
   AlertCircle, User, LogIn
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 
 const FarmWeatherApp = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user] = useState({ firstName: 'Adamu' });
+  const { t, currentLanguage } = useLanguage();
+  const [translatedWeather, setTranslatedWeather] = useState(null);
+  const [translatedAdvisory, setTranslatedAdvisory] = useState(null);
 
   const navItems = [
-    { id: 'home', to: '/', label: 'Home', icon: Home },
-    { id: 'forecast', to: '/forecast', label: 'Forecast', icon: CloudSun },
-    { id: 'alerts', to: '/alerts', label: 'Alerts', icon: AlertCircle },
-    { id: 'profile', to: '/profile', label: 'Profile', icon: User },
-    { id: 'signin', to: '/signin', label: 'Sign In', icon: LogIn },
+    { id: 'home', to: '/', label: t('home'), icon: Home },
+    { id: 'forecast', to: '/forecast', label: t('forecast'), icon: CloudSun },
+    { id: 'alerts', to: '/alerts', label: t('alerts'), icon: AlertCircle },
+    { id: 'profile', to: '/profile', label: t('profile'), icon: User },
+    { id: 'signin', to: '/signin', label: t('signIn'), icon: LogIn },
   ];
   
   const bottomNavItems = [
-    { id: 'home', to: '/', label: 'Home', icon: Home },
-    { id: 'forecast', to: '/forecast', label: 'Forecast', icon: BarChart3 },
-    { id: 'calendar', to: '/calendar', label: 'Calendar', icon: Calendar },
-    { id: 'community', to: '/community', label: 'Community', icon: Users },
+    { id: 'home', to: '/', label: t('home'), icon: Home },
+    { id: 'forecast', to: '/forecast', label: t('forecast'), icon: BarChart3 },
+    { id: 'calendar', to: '/calendar', label: t('calendar'), icon: Calendar },
+    { id: 'community', to: '/community', label: t('community'), icon: Users },
   ];
 
   // Mock data
@@ -101,6 +105,51 @@ const FarmWeatherApp = () => {
       'Store harvested crops in a dry place.',
     ],
   };
+
+  useEffect(() => {
+    const translateMockData = async () => {
+      const ts = require('../services/translationService').default;
+      const lang = currentLanguage;
+      // Weather
+      const translatedCurrentDesc = await ts.translateText(mockWeatherData.current.description, lang, 'en');
+      const forecastDescs = mockWeatherData.forecast.map(day => day.description);
+      const translatedForecastDescs = await ts.translateMultiple(forecastDescs, lang, 'en');
+      const alertDescs = mockWeatherData.alerts.map(alert => alert.description);
+      const translatedAlertDescs = alertDescs.length > 0 ? await ts.translateMultiple(alertDescs, lang, 'en') : [];
+      setTranslatedWeather({
+        ...mockWeatherData,
+        current: { ...mockWeatherData.current, description: translatedCurrentDesc },
+        forecast: mockWeatherData.forecast.map((day, i) => ({ ...day, description: translatedForecastDescs[i] })),
+        alerts: mockWeatherData.alerts.map((alert, i) => ({ ...alert, description: translatedAlertDescs[i] })),
+      });
+      // Crop Advisory
+      const actions = mockCropAdvisory.immediateActions || [];
+      const actionTexts = actions.map(a => a.action);
+      const translatedActions = actionTexts.length > 0 ? await ts.translateMultiple(actionTexts, lang, 'en') : [];
+      const recs = mockCropAdvisory.weatherRecommendations || [];
+      const recTexts = recs.map(r => r.description);
+      const translatedRecs = recTexts.length > 0 ? await ts.translateMultiple(recTexts, lang, 'en') : [];
+      const risks = mockCropAdvisory.risks || [];
+      const riskTexts = risks.map(r => r.risk);
+      const mitigationTexts = risks.map(r => r.mitigation);
+      const translatedRisks = riskTexts.length > 0 ? await ts.translateMultiple(riskTexts, lang, 'en') : [];
+      const translatedMitigations = mitigationTexts.length > 0 ? await ts.translateMultiple(mitigationTexts, lang, 'en') : [];
+      const timings = mockCropAdvisory.optimalTiming || [];
+      const timingTexts = timings.map(t => t.timing);
+      const translatedTimings = timingTexts.length > 0 ? await ts.translateMultiple(timingTexts, lang, 'en') : [];
+      const tips = mockCropAdvisory.generalTips || [];
+      const translatedTips = tips.length > 0 ? await ts.translateMultiple(tips, lang, 'en') : [];
+      setTranslatedAdvisory({
+        ...mockCropAdvisory,
+        immediateActions: actions.map((a, i) => ({ ...a, action: translatedActions[i] })),
+        weatherRecommendations: recs.map((r, i) => ({ ...r, description: translatedRecs[i] })),
+        risks: risks.map((r, i) => ({ ...r, risk: translatedRisks[i], mitigation: translatedMitigations[i] })),
+        optimalTiming: timings.map((t, i) => ({ ...t, timing: translatedTimings[i] })),
+        generalTips: translatedTips
+      });
+    };
+    translateMockData();
+  }, [currentLanguage]);
 
   const getWeatherIcon = (iconCode, size = 'w-8 h-8') => {
     const iconMap = {
@@ -255,6 +304,19 @@ const FarmWeatherApp = () => {
     // </div>
     // );
 
+  // Use translatedWeather and translatedAdvisory for all UI rendering
+  const weather = translatedWeather || mockWeatherData;
+  const advisory = translatedAdvisory || mockCropAdvisory;
+
+  // Add a loading check for weather data and alerts
+  if (!weather || !weather.current || !weather.forecast || !Array.isArray(weather.alerts)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div className="text-gray-500 text-lg">{t('loading') || 'Loading...'}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       {/* <NavigationBar /> */}
@@ -263,35 +325,35 @@ const FarmWeatherApp = () => {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
-            Good {getTimeOfDay()}, {user.firstName}!
+            {t('good') || 'Good'} {getTimeOfDay()}, {user.firstName}!
           </h1>
           <div className="flex items-center gap-2 text-gray-600">
             <p className="text-sm md:text-base">Kano, Nigeria</p>
             <div className="hidden md:flex items-center gap-2 ml-4">
               <button className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
                 <Headphones className="w-4 h-4" />
-                <span className="text-sm">Audio Alerts</span>
+                <span className="text-sm">{t('audioAlerts') || 'Audio Alerts'}</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Weather Alert */}
-        {mockWeatherData.alerts.length > 0 && (
+        {weather.alerts.length > 0 && (
           <GlassCard className="mb-6 p-4 border-l-4 border-red-500 bg-red-50/80">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="font-semibold text-red-900 mb-1">Heavy Rain Alert</h3>
+                <h3 className="font-semibold text-red-900 mb-1">{t('heavyRainAlert') || 'Heavy Rain Alert'}</h3>
                 <p className="text-red-800 text-sm mb-3">
-                  {mockWeatherData.alerts[0].description}
+                  {weather.alerts[0].description}
                 </p>
                 <div className="flex gap-2">
                   <span className="bg-red-200 text-red-800 rounded-full px-3 py-1 text-xs font-medium">
-                    Rain Alert
+                    {t('rainAlert') || 'Rain Alert'}
                   </span>
                   <span className="bg-orange-200 text-orange-800 rounded-full px-3 py-1 text-xs font-medium">
-                    High Priority
+                    {t('highPriority') || 'High Priority'}
                   </span>
                 </div>
               </div>
@@ -304,7 +366,7 @@ const FarmWeatherApp = () => {
           <div className="lg:col-span-2">
             <GlassCard className="p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Today's Weather</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('todaysWeather') || "Today's Weather"}</h2>
                 <span className="text-sm text-gray-500">
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </span>
@@ -313,13 +375,13 @@ const FarmWeatherApp = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
-                    {getWeatherIcon(mockWeatherData.current.icon, 'w-16 h-16')}
+                    {getWeatherIcon(weather.current.icon, 'w-16 h-16')}
                     <div>
                       <div className="text-4xl font-bold text-gray-900">
-                        {mockWeatherData.current.temperature}°C
+                        {weather.current.temperature}°C
                       </div>
                       <div className="text-gray-600 capitalize">
-                        {mockWeatherData.current.description}
+                        {weather.current.description}
                       </div>
                     </div>
                   </div>
@@ -327,19 +389,19 @@ const FarmWeatherApp = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <Thermometer className="w-4 h-4 text-red-500" />
-                      <span>Feels like {mockWeatherData.current.feelsLike}°C</span>
+                      <span>{t('feelsLike') || 'Feels like'} {weather.current.feelsLike}°C</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Wind className="w-4 h-4 text-blue-500" />
-                      <span>{mockWeatherData.current.windSpeed} km/h</span>
+                      <span>{weather.current.windSpeed} km/h</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Droplets className="w-4 h-4 text-blue-500" />
-                      <span>{mockWeatherData.current.humidity}%</span>
+                      <span>{weather.current.humidity}%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Gauge className="w-4 h-4 text-gray-500" />
-                      <span>{mockWeatherData.current.pressure} hPa</span>
+                      <span>{weather.current.pressure} hPa</span>
                     </div>
                   </div>
                 </div>
@@ -364,7 +426,7 @@ const FarmWeatherApp = () => {
                       <Eye className="w-4 h-4 text-gray-500" />
                       <span className="text-sm">Visibility</span>
                     </div>
-                    <span className="text-sm font-medium">{mockWeatherData.current.visibility} km</span>
+                    <span className="text-sm font-medium">{weather.current.visibility} km</span>
                   </div>
                 </div>
               </div>
@@ -372,9 +434,9 @@ const FarmWeatherApp = () => {
 
             {/* 7-Day Forecast */}
             <GlassCard className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">7-Day Forecast</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('sevenDayForecast') || '7-Day Forecast'}</h2>
               <div className="grid grid-cols-7 gap-2">
-                {mockWeatherData.forecast.map((day, index) => (
+                {weather.forecast.map((day, index) => (
                   <div key={index} className="text-center p-3 rounded-lg bg-gradient-to-b from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-colors">
                     <div className="font-medium text-sm text-gray-700 mb-2">
                       {formatDate(day.date)}
@@ -398,7 +460,7 @@ const FarmWeatherApp = () => {
                 <div className="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-sm">🌾</span>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">Crop Advisory</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('cropAdvisory') || 'Crop Advisory'}</h2>
               </div>
               
               <div className="space-y-4">
@@ -408,7 +470,7 @@ const FarmWeatherApp = () => {
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-1">Maize Farming</h3>
                       <p className="text-sm text-gray-700">
-                        {mockCropAdvisory.immediateActions[0].action}
+                        {advisory.immediateActions[0].action}
                       </p>
                     </div>
                   </div>
@@ -428,7 +490,7 @@ const FarmWeatherApp = () => {
 
             {/* Community Updates */}
             <GlassCard className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Community Updates</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('communityUpdates') || 'Community Updates'}</h2>
               <div className="space-y-4">
                 <div className="flex gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -436,15 +498,15 @@ const FarmWeatherApp = () => {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-gray-900">Adamu from Kano</span>
-                      <span className="text-xs text-gray-500">2h ago</span>
+                      <span className="font-semibold text-gray-900">Adamu {t('from') || 'from'} Kano</span>
+                      <span className="text-xs text-gray-500">2{t('hoursAgo') || 'h ago'}</span>
                     </div>
                     <p className="text-sm text-gray-700 mb-2">
                       Heavy winds damaged my maize crops yesterday. Other farmers in the area should secure their farms.
                     </p>
                     <div className="flex gap-3 text-xs">
                       <button className="text-blue-600 hover:text-blue-800">👍 12</button>
-                      <button className="text-blue-600 hover:text-blue-800">🔗 Share</button>
+                      <button className="text-blue-600 hover:text-blue-800">🔗 {t('share') || 'Share'}</button>
                     </div>
                   </div>
                 </div>
@@ -455,15 +517,15 @@ const FarmWeatherApp = () => {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-gray-900">Ngozi from Enugu</span>
-                      <span className="text-xs text-gray-500">5h ago</span>
+                      <span className="font-semibold text-gray-900">Ngozi {t('from') || 'from'} Enugu</span>
+                      <span className="text-xs text-gray-500">5{t('hoursAgo') || 'h ago'}</span>
                     </div>
                     <p className="text-sm text-gray-700 mb-2">
                       Perfect weather for cassava harvesting this week. Getting good yields!
                     </p>
                     <div className="flex gap-3 text-xs">
                       <button className="text-blue-600 hover:text-blue-800">👍 8</button>
-                      <button className="text-blue-600 hover:text-blue-800">🔗 Share</button>
+                      <button className="text-blue-600 hover:text-blue-800">🔗 {t('share') || 'Share'}</button>
                     </div>
                   </div>
                 </div>

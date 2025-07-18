@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import weatherService from '../services/weatherService';
 import cropAdvisoryService from '../services/cropAdvisoryService';
+import { useLanguage } from './LanguageContext';
 
 const WeatherContext = createContext();
 
@@ -20,16 +21,14 @@ export const WeatherProvider = ({ children }) => {
   const [location, setLocation] = useState(null);
   const [userCrops, setUserCrops] = useState([]);
 
-  // Default location (Lagos, Nigeria)
+  const { currentLanguage } = useLanguage();
   const defaultLocation = {
     lat: 6.5244,
     lon: 3.3792,
     name: 'Lagos, Nigeria'
   };
 
-  // Initialize location
   useEffect(() => {
-    // Try to get user's location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -49,20 +48,19 @@ export const WeatherProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch weather data when location changes
+  // Refetch and re-translate on location or language change
   useEffect(() => {
     if (location) {
       fetchWeatherData();
     }
-  }, [location]);
+    // eslint-disable-next-line
+  }, [location, currentLanguage]);
 
-  // Fetch weather data
+  // Fetch and translate weather data
   const fetchWeatherData = async () => {
     if (!location) return;
-    
     setLoading(true);
     setError(null);
-    
     try {
       const [currentWeather, forecast, alerts] = await Promise.all([
         weatherService.getCurrentWeather(location.lat, location.lon),
@@ -70,15 +68,30 @@ export const WeatherProvider = ({ children }) => {
         weatherService.getAlerts(location.lat, location.lon)
       ]);
 
+      // Translate weather descriptions
+      const { translateText, translateMultiple } = require('../services/translationService').default;
+      const lang = currentLanguage;
+      // Current weather description
+      const translatedCurrentDesc = await require('../services/translationService').default.translateText(currentWeather.description, lang, 'en');
+      // Forecast descriptions
+      const forecastDescriptions = forecast.map(day => day.description);
+      const translatedForecastDescs = await require('../services/translationService').default.translateMultiple(forecastDescriptions, lang, 'en');
+      // Alerts descriptions
+      const alertDescriptions = alerts.map(alert => alert.description);
+      const translatedAlertDescs = alertDescriptions.length > 0 ? await require('../services/translationService').default.translateMultiple(alertDescriptions, lang, 'en') : [];
+
+      const translatedCurrent = { ...currentWeather, description: translatedCurrentDesc };
+      const translatedForecast = forecast.map((day, i) => ({ ...day, description: translatedForecastDescs[i] }));
+      const translatedAlerts = alerts.map((alert, i) => ({ ...alert, description: translatedAlertDescs[i] }));
+
       const weatherInfo = {
-        current: currentWeather,
-        forecast,
-        alerts,
+        current: translatedCurrent,
+        forecast: translatedForecast,
+        alerts: translatedAlerts,
         location: location.name
       };
 
       setWeatherData(weatherInfo);
-      
       // Generate crop advisory if user has crops
       if (userCrops.length > 0) {
         generateCropAdvisory(weatherInfo);
@@ -91,7 +104,7 @@ export const WeatherProvider = ({ children }) => {
     }
   };
 
-  // Generate crop advisory
+  // Generate and translate crop advisory
   const generateCropAdvisory = async (weatherInfo) => {
     try {
       const advisory = await cropAdvisoryService.generateCropAdvisory(
@@ -99,7 +112,40 @@ export const WeatherProvider = ({ children }) => {
         userCrops,
         location.name
       );
-      setCropAdvisory(advisory);
+      // Translate all advisory fields
+      const lang = currentLanguage;
+      const ts = require('../services/translationService').default;
+      // Immediate actions
+      const actions = advisory.immediateActions || [];
+      const actionTexts = actions.map(a => a.action);
+      const translatedActions = actionTexts.length > 0 ? await ts.translateMultiple(actionTexts, lang, 'en') : [];
+      // Weather recommendations
+      const recs = advisory.weatherRecommendations || [];
+      const recTexts = recs.map(r => r.description);
+      const translatedRecs = recTexts.length > 0 ? await ts.translateMultiple(recTexts, lang, 'en') : [];
+      // Risks
+      const risks = advisory.risks || [];
+      const riskTexts = risks.map(r => r.risk);
+      const mitigationTexts = risks.map(r => r.mitigation);
+      const translatedRisks = riskTexts.length > 0 ? await ts.translateMultiple(riskTexts, lang, 'en') : [];
+      const translatedMitigations = mitigationTexts.length > 0 ? await ts.translateMultiple(mitigationTexts, lang, 'en') : [];
+      // Optimal timing
+      const timings = advisory.optimalTiming || [];
+      const timingTexts = timings.map(t => t.timing);
+      const translatedTimings = timingTexts.length > 0 ? await ts.translateMultiple(timingTexts, lang, 'en') : [];
+      // General tips
+      const tips = advisory.generalTips || [];
+      const translatedTips = tips.length > 0 ? await ts.translateMultiple(tips, lang, 'en') : [];
+
+      const translatedAdvisory = {
+        ...advisory,
+        immediateActions: actions.map((a, i) => ({ ...a, action: translatedActions[i] })),
+        weatherRecommendations: recs.map((r, i) => ({ ...r, description: translatedRecs[i] })),
+        risks: risks.map((r, i) => ({ ...r, risk: translatedRisks[i], mitigation: translatedMitigations[i] })),
+        optimalTiming: timings.map((t, i) => ({ ...t, timing: translatedTimings[i] })),
+        generalTips: translatedTips
+      };
+      setCropAdvisory(translatedAdvisory);
     } catch (error) {
       console.error('Error generating crop advisory:', error);
       // Use fallback advisory
@@ -147,10 +193,8 @@ export const WeatherProvider = ({ children }) => {
   // Get weather description
   const getWeatherDescription = (weatherData) => {
     if (!weatherData) return '';
-    
     const temp = weatherData.current.temperature;
     const description = weatherData.current.description;
-    
     if (temp > 30) return 'Hot';
     if (temp > 25) return 'Warm';
     if (temp > 15) return 'Mild';
@@ -160,18 +204,12 @@ export const WeatherProvider = ({ children }) => {
   // Check if weather is suitable for farming
   const isWeatherSuitableForFarming = () => {
     if (!weatherData) return true;
-    
     const temp = weatherData.current.temperature;
     const alerts = weatherData.alerts;
-    
-    // Check temperature range
     if (temp < 10 || temp > 40) return false;
-    
-    // Check for severe weather alerts
     const severeAlerts = alerts.filter(alert => 
       alert.severity === 'severe' || alert.severity === 'extreme'
     );
-    
     return severeAlerts.length === 0;
   };
 

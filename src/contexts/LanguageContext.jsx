@@ -30,6 +30,7 @@ export const LanguageProvider = ({ children }) => {
       
       // Weather
       currentWeather: 'Current Weather',
+      todaysWeather: "Today's Weather",
       feelsLike: 'Feels like',
       humidity: 'Humidity',
       wind: 'Wind',
@@ -38,6 +39,7 @@ export const LanguageProvider = ({ children }) => {
       
       // Crop Advisory
       cropAdvisories: 'Crop Advisories',
+      cropAdvisory: 'Crop Advisory',
       communityUpdates: 'Community Updates',
       listen: 'Listen',
       
@@ -51,6 +53,11 @@ export const LanguageProvider = ({ children }) => {
       enterPassword: 'Enter your password',
       dontHaveAccount: "Don't have an account?",
       alreadyHaveAccount: 'Already have an account?',
+      userInformation: 'User Information',
+      languageSettings: 'Language Settings',
+      cropSelection: 'Crop Selection',
+      cropSelectionDescription: 'Select the crops you grow to receive personalized farming advice.',
+      selectedCrops: 'Selected Crops',
       
       // Weather descriptions
       sunny: 'Sunny',
@@ -61,11 +68,14 @@ export const LanguageProvider = ({ children }) => {
       
       // Alerts
       heavyRainfall: 'Heavy rainfall expected tomorrow afternoon. Consider postponing outdoor farming activities.',
+      heavyRainAlert: 'Heavy Rain Alert',
       rainAlert: 'Rain Alert',
       highPriority: 'High Priority',
       windAdvisory: 'Wind Advisory',
       strongWinds: 'Strong winds expected in the northern region. Secure your crops and farm structures.',
       windAlert: 'Wind Alert',
+      weatherAlerts: 'Weather Alerts',
+      heavyRainfallExpected: 'Heavy Rainfall Expected',
       
       // Crop specific
       maizePlanting: 'Maize Planting',
@@ -76,6 +86,7 @@ export const LanguageProvider = ({ children }) => {
       // Community
       hoursAgo: 'h ago',
       share: 'Share',
+      from: 'from',
       
       // Actions
       save: 'Save',
@@ -90,12 +101,71 @@ export const LanguageProvider = ({ children }) => {
       error: 'Error',
       success: 'Success',
       noData: 'No data available',
+      noCropsSelected: 'No Crops Selected',
+      selectCropsForAdvisory: 'Select your crops in the profile to get personalized farming advice.',
+      
+      // Greetings
+      good: 'Good',
+      
+      // Audio
+      audioAlerts: 'Audio Alerts',
+      
+      // Calendar and Community
+      calendar: 'Calendar',
+      community: 'Community',
+      
+      // Form Labels
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      phoneNumber: 'Phone Number',
+      emailOrPhone: 'Email or Phone Number',
+      enterFirstName: 'Enter your first name',
+      enterLastName: 'Enter your last name',
+      enterEmailOrPhone: 'Enter your email or phone number',
+      enterPassword: 'Enter your password',
+      signingIn: 'Signing In...',
+      
+      // Validation Messages
+      requiredFields: 'Email/Phone and password are required.',
+      invalidEmailOrPhone: 'Enter a valid email or phone number.',
+      signInFailed: 'Oops! Sign-in failed.',
+      signUpFailed: 'Oops! Sign-up failed.',
+      accountExists: 'An account with this email or phone number already exists.',
+      firstNameRequired: 'First name, last name, and password are required.',
+      emailOrPhoneRequired: 'Either email or phone number is required.',
+      invalidEmail: 'Invalid email format.',
       
       // Units
       celsius: '°C',
       kilometers: 'km/h',
       percent: '%',
-      millimeters: 'mm'
+      millimeters: 'mm',
+      
+      // Time
+      morning: 'Morning',
+      afternoon: 'Afternoon',
+      evening: 'Evening',
+      
+      // Weather Details
+      pressure: 'Pressure',
+      visibility: 'Visibility',
+      sunrise: 'Sunrise',
+      sunset: 'Sunset',
+      
+      // Crop Advisory Sections
+      immediateActions: 'Immediate Actions',
+      weatherRecommendations: 'Weather Recommendations',
+      risksAndMitigation: 'Risks & Mitigation',
+      optimalTiming: 'Optimal Timing',
+      generalTips: 'General Tips',
+      
+      // Community Messages
+      communityMessage1: 'Heavy winds damaged my maize crops yesterday. Other farmers in the area should secure their farms.',
+      communityMessage2: 'Perfect weather for cassava harvesting this week. Getting good yields!',
+      
+      // App Brand
+      farmWeather: 'FarmWeather',
+      kanoNigeria: 'Kano, Nigeria'
     }
   };
 

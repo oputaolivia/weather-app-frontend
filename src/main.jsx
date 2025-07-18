@@ -11,11 +11,11 @@ import { UserProvider } from './contexts/UserContext';
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <UserProvider>
+    <LanguageProvider>         {/* LanguageProvider must wrap WeatherProvider */}
       <WeatherProvider>
-        <LanguageProvider>
-          <App />
-        </LanguageProvider>
+        <App />
       </WeatherProvider>
-    </UserProvider>
-  </StrictMode>,
+    </LanguageProvider>
+  </UserProvider>
+</StrictMode>
 )
