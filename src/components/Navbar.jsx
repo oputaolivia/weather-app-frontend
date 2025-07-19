@@ -12,6 +12,7 @@ import {
   AlertCircle,
   LogIn} from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import LanguageSelector from './LanguageSelector';
 
 const navItems = [
   { id: 'home', to: '/', label: 'Home', icon: Home },
@@ -53,7 +54,7 @@ const NavigationBar = () => {
             className="fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-emerald-500 to-teal-600 text-white pt-20 px-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <nav className="space-y-2">
+            <nav className="space-y-2 mb-4">
               {navItems.map(({ id, label, icon: Icon, to }) => (
                 <NavLink
                   key={id}
@@ -73,6 +74,10 @@ const NavigationBar = () => {
                 </NavLink>
               ))}
             </nav>
+            <div className="mb-4 p-3 bg-white/10 rounded-lg">
+              <div className="text-white/80 text-sm mb-2">Language</div>
+              <LanguageSelector className="w-full" />
+            </div>
           </div>
         </div>
       )}
@@ -109,6 +114,7 @@ const NavigationBar = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
+            <LanguageSelector className="w-36" />
             <button className="p-2 rounded-lg hover:bg-white/10">
               <Bell className="w-5 h-5" />
             </button>
