@@ -53,6 +53,7 @@ const SignUp = () => {
 
     try {
       const data = await signUpUser(formData);
+      localStorage.setItem("weatherAppUser", JSON.stringify(data));
       setUser(data);
       navigate('/');
     } catch (error) {

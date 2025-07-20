@@ -12,7 +12,7 @@ const SignIn = () => {
   const [disableButton, setDisableButton] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const { setUser } = useUser();
+  const { setUser, user } = useUser();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -52,7 +52,9 @@ const SignIn = () => {
     }
     try {
       const data = await signInUser(payload);
+      localStorage.setItem("weatherAppUser", JSON.stringify(data));
       setUser(data);
+      console.log(user)
       navigate('/');
     } catch (error) {
       setErrorMessage(error.message || 'Oops! Sign-in failed.');

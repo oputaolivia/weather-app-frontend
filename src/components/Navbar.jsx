@@ -10,20 +10,32 @@ import {
   X,
   Cloud,
   AlertCircle,
-  LogIn} from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+  LogIn,
+  LogOut} from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import LanguageSelector from './LanguageSelector';
-
-const navItems = [
-  { id: 'home', to: '/', label: 'Home', icon: Home },
-  { id: 'forecast', to: '/forecast', label: 'Forecast', icon: BarChart3 },
-  { id: 'alerts', to: '/alerts', label: 'Alerts', icon: AlertCircle },
-  { id: 'signin', to: '/signin', label: 'Sign In', icon: LogIn },
-];
+import { useUser } from '../contexts/UserContext';
 
 const NavigationBar = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { logout, user } = useUser();
+  const navigate = useNavigate();
+
+  const navItems = [
+    { id: 'home', to: '/', label: 'Home', icon: Home },
+    { id: 'forecast', to: '/forecast', label: 'Forecast', icon: BarChart3 },
+    { id: 'alerts', to: '/alerts', label: 'Alerts', icon: AlertCircle },
+    {
+      id: 'signout',
+      label: user ? 'Logout' : 'Login',
+      icon: user ? LogOut : LogIn,
+      onClick: () => {
+        logout();
+        navigate('/signin');
+      },
+    },
+  ];
 
   return (
     <>
@@ -55,23 +67,30 @@ const NavigationBar = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="space-y-2 mb-4">
-              {navItems.map(({ id, label, icon: Icon, to }) => (
-                <NavLink
-                  key={id}
-                  to={to}
-                  onClick={() => {
-                    setActiveTab(id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={({ isActive }) =>
-                    `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive ? 'bg-white/20' : 'hover:bg-white/10'
-                    }`
-                  }
-                >
-                  <Icon className="w-5 h-5" />
-                  {label}
-                </NavLink>
+              {navItems.map((item) => (
+                item.onClick ? (
+                  <button
+                    key={item.id}
+                    onClick={item.onClick}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </button>
+                ) : (
+                  <NavLink
+                    to={item.to}
+                    key={item.id}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+                      }`
+                    }
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </NavLink>
+                )
               ))}
             </nav>
             <div className="mb-4 p-3 bg-white/10 rounded-lg">
@@ -96,20 +115,31 @@ const NavigationBar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex gap-6 items-center">
-            {navItems.map(({ id, to, label, icon: Icon }) => (
-              <NavLink
-                key={id}
-                to={to}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    isActive ? 'bg-white/20 text-emerald-600' : 'hover:bg-white/10'
-                  }`
-                }
-              >
-                <Icon className="w-5 h-5" />
-                {label}
-              </NavLink>
-            ))}
+            {navItems.map((item) => (
+                item.onClick ? (
+                  <button
+                    key={item.id}
+                    onClick={item.onClick}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </button>
+                ) : (
+                  <NavLink
+                    to={item.to}
+                    key={item.id}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+                      }`
+                    }
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </NavLink>
+                )
+              ))}
           </div>
 
           {/* Actions */}
@@ -129,25 +159,56 @@ const NavigationBar = () => {
   );
 };
 
-const BottomNavigation = () => (
-  <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-2 z-50">
-    <div className="flex items-center justify-around">
-      {navItems.map(({ id, to, label, icon: Icon }) => (
-        <NavLink
-          key={id}
-          to={to}
-          className={({ isActive }) =>
-            `flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-              isActive ? 'text-emerald-600' : 'text-gray-500'
-            }`
-          }
-        >
-          <Icon className="w-5 h-5 mb-1" />
-          <span className="text-xs">{label}</span>
-        </NavLink>
-      ))}
-    </div>
-  </div>
-);
+const BottomNavigation = () => {
+  const { logout, user } = useUser();
+  const navigate = useNavigate();
+
+  const navItems = [
+    { id: 'home', to: '/', label: 'Home', icon: Home },
+    { id: 'forecast', to: '/forecast', label: 'Forecast', icon: BarChart3 },
+    { id: 'alerts', to: '/alerts', label: 'Alerts', icon: AlertCircle },
+    {
+      id: 'signout',
+      label: user ? 'Logout' : 'Login',
+      icon: user ? LogOut : LogIn,
+      onClick: () => {
+        logout();
+        navigate('/signin');
+      },
+    },
+  ]
+  return (
+    <>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-2 z-50">
+        <div className="flex items-center justify-around">
+          {navItems.map((item) => (
+                item.onClick ? (
+                  <button
+                    key={item.id}
+                    onClick={item.onClick}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </button>
+                ) : (
+                  <NavLink
+                    to={item.to}
+                    key={item.id}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+                      }`
+                    }
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </NavLink>
+                )
+              ))}
+        </div>
+      </div>
+    </>
+);}
 
 export { NavigationBar, BottomNavigation };

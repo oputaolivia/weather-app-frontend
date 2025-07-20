@@ -9,7 +9,7 @@ export const SUPPORTED_LANGUAGES = {
   pcm: { name: 'Nigerian Pidgin', code: 'pcm' }
 };
 
-const token = import.meta.env.VITE_GITHUB_GPT_API_KEY || process.env["GITHUB_TOKEN"];
+const token = import.meta.env.VITE_GITHUB_GPT_API_KEY;
 const endpoint = "https://models.github.ai/inference";
 const model = "openai/gpt-4.1";
 

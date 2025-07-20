@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Forecast from './pages/Forecast';
 import Alerts from './pages/Alerts';
@@ -8,18 +8,26 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import './App.css';
 import { NavigationBar, BottomNavigation } from './components/Navbar';
+import { useUser } from './contexts/UserContext';
 
 function App() {
-  // Removed Google Translate script injection
+  const { user, loading } = useUser();
+  if (loading) return null;
+  
+  const PrivateRoute = ({ children }) => {
+    return user ? children : <Navigate to="/signin" />;
+  };
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-      <NavigationBar />
+        <NavigationBar />
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/forecast" element={<Forecast />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+          <Route path="/forecast" element={<PrivateRoute><Forecast /></PrivateRoute>} />
+          <Route path="/alerts" element={<PrivateRoute><Alerts /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
         </Routes>
