@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
-import { signInUser } from '../services/userService';
+import { signInUser, getUser } from '../services/userService';
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
@@ -47,16 +47,25 @@ const SignIn = () => {
 
     setDisableButton(true);
     const { identifier, password } = formData;
-    const payload = {password};
+    const payload = { password };
 
     if (/\S+@\S+\.\S+/.test(identifier)) {
       payload.email = identifier;
     } else {
       payload.phoneNumber = identifier;
     }
+
     try {
-      const data = await signInUser(payload);
-      login(data)
+      const authData = await signInUser(payload);
+      const token = authData?.data?.token;
+
+      if (!token) {
+        throw new Error("No token returned from server.");
+      }
+      setCookie('weatherAppUser', JSON.stringify(authData), 60);
+
+      const profileData = await getUser(token);
+      login(profileData);
       navigate('/');
     } catch (error) {
       setErrorMessage(error.message || 'Oops! Sign-in failed.');
@@ -65,15 +74,16 @@ const SignIn = () => {
     }
   };
 
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="bg-white rounded-lg shadow p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6">Sign In</h1>
-        {/* {errorMessage && (
+        {errorMessage && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
             {errorMessage}
           </div>
-        )} */}
+        )}
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); submitButtonSignIn(); }}>
           <div>
             <label className="block mb-1 font-semibold">Email or Phone Number</label>

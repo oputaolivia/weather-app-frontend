@@ -13,7 +13,7 @@ import { useUser } from './contexts/UserContext';
 function App() {
   const { user, loading } = useUser();
   if (loading) return null;
-  
+
   const PrivateRoute = ({ children }) => {
     return user ? children : <Navigate to="/signin" />;
   };
@@ -27,7 +27,6 @@ function App() {
           <Route path="/forecast" element={<PrivateRoute><Forecast /></PrivateRoute>} />
           <Route path="/alerts" element={<PrivateRoute><Alerts /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
         </Routes>

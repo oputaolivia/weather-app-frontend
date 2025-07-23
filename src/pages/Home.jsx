@@ -26,30 +26,15 @@ import {
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-
+import { getUser } from '../services/userService';
+import { getCookie } from '../services/cookies';
+import {useUser} from '../contexts/UserContext'
 
 const FarmWeatherApp = () => {
-  const [activeTab, setActiveTab] = useState('home');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user] = useState({ firstName: 'Adamu' });
+  const {user} = useUser();
   const { t, currentLanguage } = useLanguage();
   const [translatedWeather, setTranslatedWeather] = useState(null);
   const [translatedAdvisory, setTranslatedAdvisory] = useState(null);
-
-  const navItems = [
-    { id: 'home', to: '/', label: t('home'), icon: Home },
-    { id: 'forecast', to: '/forecast', label: t('forecast'), icon: CloudSun },
-    { id: 'alerts', to: '/alerts', label: t('alerts'), icon: AlertCircle },
-    { id: 'profile', to: '/profile', label: t('profile'), icon: User },
-    { id: 'signin', to: '/signin', label: t('signIn'), icon: LogIn },
-  ];
-  
-  const bottomNavItems = [
-    { id: 'home', to: '/', label: t('home'), icon: Home },
-    { id: 'forecast', to: '/forecast', label: t('forecast'), icon: BarChart3 },
-    { id: 'calendar', to: '/calendar', label: t('calendar'), icon: Calendar },
-    { id: 'community', to: '/community', label: t('community'), icon: Users },
-  ];
 
   // Mock data
   const mockWeatherData = {
@@ -85,6 +70,7 @@ const FarmWeatherApp = () => {
     ],
     location: 'Kano, Nigeria',
   };
+
 
   const mockCropAdvisory = {
     immediateActions: [
@@ -192,118 +178,6 @@ const FarmWeatherApp = () => {
     </div>
   );
 
-  // const NavigationBar = () => (
-  //   <>
-  //     {/* Mobile Navigation */}
-  //     <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4">
-  //       <div className="flex items-center justify-between">
-  //         <div className="flex items-center gap-2">
-  //           <Cloud className="w-6 h-6" />
-  //           <span className="font-bold text-lg">FarmWeather</span>
-  //         </div>
-  //         <button 
-  //           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-  //           className="p-2 rounded-lg hover:bg-white/10"
-  //         >
-  //           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-  //         </button>
-  //       </div>
-  //       <p className="text-sm mt-1 text-white/90">Kano, Nigeria</p>
-  //     </div>
-
-  //     {/* Mobile Menu Overlay */}
-  //     {isMobileMenuOpen && (
-  //       <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setIsMobileMenuOpen(false)}>
-  //         <div className="fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-emerald-500 to-teal-600 text-white pt-20 px-4">
-  //           <nav className="space-y-2">
-  //             {[
-  //               { id: 'home', label: 'Home', icon: Home },
-  //               { id: 'forecast', label: 'Forecast', icon: BarChart3 },
-  //               { id: 'calendar', label: 'Calendar', icon: Calendar },
-  //               { id: 'community', label: 'Community', icon: Users },
-  //             ].map(({ id, label, icon: Icon }) => (
-  //               <button
-  //                 key={id}
-  //                 onClick={() => {
-  //                   setActiveTab(id);
-  //                   setIsMobileMenuOpen(false);
-  //                 }}
-  //                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-  //                   activeTab === id ? 'bg-white/20' : 'hover:bg-white/10'
-  //                 }`}
-  //               >
-  //                 <Icon className="w-5 h-5" />
-  //                 {label}
-  //               </button>
-  //             ))}
-  //           </nav>
-  //         </div>
-  //       </div>
-  //     )}
-
-  //     {/* Desktop Navigation */}
-  //     <div className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-4">
-  //       <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
-  //         <div className="flex items-center gap-3">
-  //           <Cloud className="w-8 h-8" />
-  //           <div>
-  //             <h1 className="font-bold text-xl">FarmWeather</h1>
-  //             <p className="text-sm text-white/90">Kano, Nigeria</p>
-  //           </div>
-  //         </div>
-          
-  //         <div className="hidden md:flex gap-6 items-center">
-  //   {navItems.map(({ id, to, label, icon: Icon }) => (
-  //     <NavLink
-  //       key={id}
-  //       to={to}
-  //       className={({ isActive }) =>
-  //         `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-  //           isActive ? 'bg-white/20 text-emerald-600' : 'hover:bg-white/10'
-  //         }`
-  //       }
-  //     >
-  //       <Icon className="w-5 h-5" />
-  //       {label}
-  //     </NavLink>
-  //   ))}
-  // </div>
-
-  //         <div className="flex items-center gap-3">
-  //           <button className="p-2 rounded-lg hover:bg-white/10">
-  //             <Bell className="w-5 h-5" />
-  //           </button>
-  //           <button className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20">
-  //             <Volume2 className="w-4 h-4" />
-  //             <span className="text-sm">Audio Alerts</span>
-  //           </button>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   </>
-  // );
-
-    // const BottomNavigation = () => (
-    //   <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-2 z-50">
-    //   <div className="flex items-center justify-around">
-    //     {bottomNavItems.map(({ id, to, label, icon: Icon }) => (
-    //       <NavLink
-    //         key={id}
-    //         to={to}
-    //         className={({ isActive }) =>
-    //           `flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-    //             isActive ? 'text-emerald-600' : 'text-gray-500'
-    //           }`
-    //         }
-    //       >
-    //         <Icon className="w-5 h-5 mb-1" />
-    //         <span className="text-xs">{label}</span>
-    //       </NavLink>
-    //     ))}
-    //   </div>
-    // </div>
-    // );
-
   // Use translatedWeather and translatedAdvisory for all UI rendering
   const weather = translatedWeather || mockWeatherData;
   const advisory = translatedAdvisory || mockCropAdvisory;
@@ -318,17 +192,21 @@ const FarmWeatherApp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="min-h-screen pt-[40px] md:pt-[50px] bg-gradient-to-br from-blue-50 via-white to-green-50">
       {/* <NavigationBar /> */}
       
-      <div className="pt-16 md:pt-20 pb-20 md:pb-8 px-4 md:px-6 max-w-7xl mx-auto">
+      <div className="pt-24 sm:pt-20 md:pt-16 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
-            {t('good') || 'Good'} {getTimeOfDay()}, {user.firstName}!
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 mb-2">
+            {(t('good') || 'Good')} {getTimeOfDay()}, {user ? user.data.firstName : 'Guest'}!
           </h1>
-          <div className="flex items-center gap-2 text-gray-600">
-            <p className="text-sm md:text-base">Kano, Nigeria</p>
+          <div className="flex flex-wrap items-center gap-2 text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
+              {user?.data?.location?.city && user?.data?.location?.state
+                ? `${user?.data.location.city}, ${user?.data.location.state}, Nigeria`
+                : 'Kano, Nigeria'}
+            </p>
             <div className="hidden md:flex items-center gap-2 ml-4">
               <button className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
                 <Headphones className="w-4 h-4" />

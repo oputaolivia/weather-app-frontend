@@ -69,7 +69,7 @@ export const getUser = async (accessToken) => {
 
 // Update User
 export const updateUser = async (userInput, accessToken, id) => {
-  const endpoint = `https://weather-app-backend-fdzb.onrender.com/api/users/updateUser/:${id}`;
+  const endpoint = `https://weather-app-backend-fdzb.onrender.com/api/users/updateUser/${id}`;
 
   const response = await fetch(endpoint, {
     method: 'PATCH',
