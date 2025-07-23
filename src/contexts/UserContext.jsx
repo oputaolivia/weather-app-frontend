@@ -1,51 +1,27 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { getCookie, setCookie, deleteCookie } from '../services/cookies';
-import { getUser } from '../services/userService';
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const cookie = getCookie('weatherAppUser');
-    if (cookie) {
-      const parsed = JSON.parse(cookie);
-      const token = parsed?.token || parsed?.token;
-
-      if (token) {
-        getUser(token)
-          .then((userData) => {
-            setUser(userData); // Or normalize here
-            setLoading(false);
-          })
-          .catch(() => {
-            setUser(null);
-            setLoading(false);
-          });
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    } else {
-      setUser(null);
-      setLoading(false);
-    }
-  }, []);
-
-  const login = (userData) => {
-    setCookie('weatherAppUser', JSON.stringify(userData), 60); // minutes
-    setUser(userData);
-  };
+  const [user, setUser] = useState(() => {
+    const stored = getCookie('weatherAppUser');
+    return stored ? JSON.parse(stored) : null;
+  });
 
   const logout = () => {
     deleteCookie('weatherAppUser');
     setUser(null);
   };
 
+  const login = (userData) => {
+    deleteCookie('weatherAppUser');
+    setCookie('weatherAppUser', JSON.stringify(userData), 60);
+    setUser(userData);
+  };
+
   return (
-    <UserContext.Provider value={{ user, loading, login, logout, setUser }}>
+    <UserContext.Provider value={{ user, login, logout, setUser }}>
       {children}
     </UserContext.Provider>
   );
