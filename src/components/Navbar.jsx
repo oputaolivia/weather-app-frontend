@@ -11,7 +11,8 @@ import {
   Cloud,
   AlertCircle,
   LogIn,
-  LogOut} from 'lucide-react';
+  LogOut,
+  User} from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import LanguageSelector from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
@@ -97,6 +98,13 @@ const NavigationBar = () => {
               <div className="text-white/80 text-sm mb-2">Language</div>
               <LanguageSelector className="w-full" />
             </div>
+            <button onClick={() => navigate('/profile')} className="p-2 rounded-lg hover:bg-white/10">
+              <User className="w-5 h-5" />
+            </button>
+            <button className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20">
+              <Volume2 className="w-4 h-4" />
+              <span className="text-sm">Audio Alerts</span>
+            </button>
           </div>
         </div>
       )}
@@ -147,6 +155,9 @@ const NavigationBar = () => {
             <LanguageSelector className="w-36" />
             <button className="p-2 rounded-lg hover:bg-white/10">
               <Bell className="w-5 h-5" />
+            </button>
+            <button onClick={() => navigate('/profile')} className="p-2 rounded-lg hover:bg-white/10">
+              <User className="w-5 h-5" />
             </button>
             <button className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20">
               <Volume2 className="w-4 h-4" />

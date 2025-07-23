@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, } from 'react';
 import { getCookie, setCookie, deleteCookie } from '../services/cookies';
 
 const UserContext = createContext();
@@ -9,18 +9,9 @@ export const UserProvider = ({ children }) => {
     return stored ? JSON.parse(stored) : null;
   });
 
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const storedUser = getCookie('weatherAppUser');
-    if (storedUser) setUser(storedUser);
-    setLoading(false);
-  }, []);
-
   const logout = () => {
     setUser(null);
     deleteCookie('weatherAppUser');
-    console.log(user)
   };
 
   const login = (userData) => {
@@ -28,36 +19,8 @@ export const UserProvider = ({ children }) => {
     setCookie('weatherAppUser', JSON.stringify(userData), 60);
   };
 
-  const hiddenTimeRef = useRef(null);
-  const MAX_HIDDEN_DURATION = 60 * 60 * 1000;
-
-  useEffect(() => {
-    if (!user) return;
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        hiddenTimeRef.current = Date.now();
-      } else if (document.visibilityState === 'visible') {
-        const now = Date.now();
-        if (
-          hiddenTimeRef.current &&
-          now - hiddenTimeRef.current > MAX_HIDDEN_DURATION
-        ) {
-          logout();
-        }
-        hiddenTimeRef.current = null;
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [user]);
-
   return (
-    <UserContext.Provider value={{ user, setUser: login, logout }}>
+    <UserContext.Provider value={{ user, login, logout, setUser }}>
       {children}
     </UserContext.Provider>
   );

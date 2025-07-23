@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { signInUser } from '../services/userService';
@@ -12,11 +12,15 @@ const SignIn = () => {
   const [disableButton, setDisableButton] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const { setUser, user } = useUser();
+  const { user, login } = useUser();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  useEffect(() => {
+    console.log("User updated in context:", user);
+  }, [user]);
 
   const validateInputs = () => {
     const { identifier, password } = formData;
@@ -52,9 +56,7 @@ const SignIn = () => {
     }
     try {
       const data = await signInUser(payload);
-      localStorage.setItem("weatherAppUser", JSON.stringify(data));
-      setUser(data);
-      console.log(user)
+      login(data)
       navigate('/');
     } catch (error) {
       setErrorMessage(error.message || 'Oops! Sign-in failed.');
