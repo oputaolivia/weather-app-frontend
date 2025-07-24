@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import {
   Home,
   BarChart3,
-  Calendar,
-  Users,
   Bell,
   Volume2,
   Menu,
   X,
   Cloud,
+  CloudSunIcon,
   AlertCircle,
   LogIn,
   LogOut,
@@ -18,7 +17,6 @@ import LanguageSelector from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 
 const NavigationBar = () => {
-  const [activeTab, setActiveTab] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { logout, user } = useUser();
   const navigate = useNavigate();
@@ -33,7 +31,7 @@ const NavigationBar = () => {
       icon: user ? LogOut : LogIn,
       onClick: () => {
         logout();
-        navigate('/signin');
+        navigate('signin');
       },
     },
   ];
@@ -44,7 +42,7 @@ const NavigationBar = () => {
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Cloud className="w-6 h-6" />
+            <CloudSunIcon className="w-6 h-6" />
             <span className="font-bold text-lg">FarmWeather</span>
           </div>
           <button
@@ -114,7 +112,7 @@ const NavigationBar = () => {
         <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <Cloud className="w-8 h-8" />
+            <CloudSunIcon className="w-8 h-8" />
             <div>
               <h1 className="font-bold text-xl">FarmWeather</h1>
               <p className="text-sm text-white/90">Kano, Nigeria</p>

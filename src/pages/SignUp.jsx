@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
-import { getUser, signInUser, signUpUser } from '../services/userService';
+import { signInUser, signUpUser } from '../services/userService';
 
 const SignUp = () => {
 
@@ -87,15 +87,7 @@ const SignUp = () => {
 
       try {
       const authData = await signInUser(credentials);
-      const token = authData?.data?.token;
-
-      if (!token) {
-        throw new Error("No token returned from server.");
-      }
-      setCookie('weatherAppUser', JSON.stringify(userData), 60);
-
-      const profileData = await getUser(token);
-      login(profileData);
+      await login(authData);
       navigate('/');
     } catch (error) {
       setErrorMessage(error.message || 'Oops! Sign-in failed.');
@@ -115,77 +107,93 @@ const SignUp = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="bg-white rounded-lg shadow p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6">Sign Up</h1>
+    <div className="flex items-center justify-center min-h-screen pt-[80px] md:pt-[70px] bg-gray-50 px-4">
+  <div className="bg-white rounded-lg shadow p-8 w-full max-w-2xl">
+    <h1 className="text-2xl font-bold mb-6 text-center">Sign Up</h1>
 
-        {errorMessage && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
-            {errorMessage}
-          </div>
-        )}
+    {errorMessage && (
+      <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
+        {errorMessage}
+      </div>
+    )}
 
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); submitButtonSignUp(); }}>
-
+    <form onSubmit={(e) => { e.preventDefault(); submitButtonSignUp(); }} className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold mb-2">Personal Information</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block mb-1 font-semibold">First Name</label>
-            <input name='firstName' value={formData.firstName} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Enter your first name" />
+            <input name='firstName' value={formData.firstName} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="First name" />
           </div>
-
           <div>
             <label className="block mb-1 font-semibold">Last Name</label>
-            <input name='lastName' value={formData.lastName} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Enter your last name" />
+            <input name='lastName' value={formData.lastName} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Last name" />
           </div>
-
-          <div>
-            <label className="block mb-1 font-semibold">Email</label>
-            <input name='email' value={formData.email} onChange={handleChange} type="email" className="w-full border rounded px-3 py-2" placeholder="Enter your email" />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-semibold">Phone Number</label>
-            <input name='phoneNumber' value={formData.phoneNumber} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Enter your phone number" />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-semibold">State of Farm Location</label>
-            <input name='state' value={formData.state} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Enter your state" />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-semibold">Local Government Area (LGA)</label>
-            <input name='lga' value={formData.lga} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Enter your LGA (optional)" />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-semibold">City</label>
-            <input name='city' value={formData.city} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Enter your city (optional)" />
-          </div>
-
-          <div>
-            <label className="block mb-1 font-semibold">Address</label>
-            <input name='address' value={formData.address} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Enter your full address (optional)" />
-          </div>
-
           <div>
             <label className="block mb-1 font-semibold">Password</label>
-            <input name='password' value={formData.password} onChange={handleChange} type="password" className="w-full border rounded px-3 py-2" placeholder="Enter your password" />
+            <input name='password' value={formData.password} onChange={handleChange} type="password" className="w-full border rounded px-3 py-2" placeholder="Password" />
           </div>
-
-          <button
-            type="submit"
-            disabled={disableButton}
-            className={`w-full py-2 rounded font-bold text-white ${disableButton ? 'bg-gray-400' : 'bg-green-600'}`}
-          >
-            {disableButton ? 'Signing Up...' : 'Sign Up'}
-          </button>
-        </form>
-
-        <div className="mt-4 text-center text-sm">
-          Already have an account? <a href="/signin" className="text-blue-600 underline">Sign In</a>
         </div>
       </div>
+
+      <div>
+        <h2 className="text-lg font-semibold mb-2">Contact Information</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-1 font-semibold">Email</label>
+            <input name='email' value={formData.email} onChange={handleChange} type="email" className="w-full border rounded px-3 py-2" placeholder="Email address" />
+          </div>
+          <div>
+            <label className="block mb-1 font-semibold">Phone Number</label>
+            <input name='phoneNumber' value={formData.phoneNumber} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Phone number" />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold mb-2">Farm Location</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-1 font-semibold">State</label>
+            <input name='state' value={formData.state} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="State" />
+          </div>
+          <div>
+            <label className="block mb-1 font-semibold">LGA</label>
+            <input name='lga' value={formData.lga} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="LGA (optional)" />
+          </div>
+          <div>
+            <label className="block mb-1 font-semibold">City</label>
+            <input name='city' value={formData.city} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="City (optional)" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block mb-1 font-semibold">Address</label>
+            <input name='address' value={formData.address} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Full address (optional)" />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          disabled={disableButton}
+          className={`w-full py-2 rounded font-bold text-white flex items-center justify-center gap-2 ${
+            disableButton ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+          }`}
+        >
+          {disableButton && (
+            <span className="animate-spin h-4 w-4 border-t-2 border-white border-solid rounded-full"></span>
+          )}
+          {disableButton ? 'Signing Up...' : 'Sign Up'}
+        </button>
+      </div>
+    </form>
+
+    <div className="mt-6 text-center text-sm">
+      Already have an account? <a href="/signin" className="text-blue-600 underline">Sign In</a>
     </div>
+  </div>
+</div>
+
   );
 };
 
