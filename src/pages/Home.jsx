@@ -26,160 +26,268 @@ import {
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-
+import { useWeather } from '../contexts/WeatherContext';
+import { getUser } from '../services/userService';
+import { getCookie } from '../services/cookies';
+import {useUser} from '../contexts/UserContext';
+import translationService from '../services/translationService';
 
 const FarmWeatherApp = () => {
-  const [activeTab, setActiveTab] = useState('home');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user] = useState({ firstName: 'Adamu' });
+  const {user} = useUser();
   const { t, currentLanguage } = useLanguage();
+  const { weatherData, cropAdvisory, loading, error } = useWeather();
   const [translatedWeather, setTranslatedWeather] = useState(null);
   const [translatedAdvisory, setTranslatedAdvisory] = useState(null);
-
-  const navItems = [
-    { id: 'home', to: '/', label: t('home'), icon: Home },
-    { id: 'forecast', to: '/forecast', label: t('forecast'), icon: CloudSun },
-    { id: 'alerts', to: '/alerts', label: t('alerts'), icon: AlertCircle },
-    { id: 'profile', to: '/profile', label: t('profile'), icon: User },
-    { id: 'signin', to: '/signin', label: t('signIn'), icon: LogIn },
-  ];
-  
-  const bottomNavItems = [
-    { id: 'home', to: '/', label: t('home'), icon: Home },
-    { id: 'forecast', to: '/forecast', label: t('forecast'), icon: BarChart3 },
-    { id: 'calendar', to: '/calendar', label: t('calendar'), icon: Calendar },
-    { id: 'community', to: '/community', label: t('community'), icon: Users },
-  ];
-
-  // Mock data
-  const mockWeatherData = {
-    current: {
-      temperature: 28,
-      feelsLike: 30,
-      humidity: 75,
-      windSpeed: 12,
-      description: 'Partly cloudy',
-      icon: '03d',
-      city: 'Surulere',
-      country: 'NG',
-      pressure: 1012,
-      visibility: 8,
-      sunrise: new Date(),
-      sunset: new Date(),
-    },
-    forecast: [
-      { date: new Date(), temp: 28, tempMin: 24, tempMax: 30, description: 'Rainy', icon: '09d', humidity: 75, windSpeed: 12, precipitation: 20 },
-      { date: new Date(Date.now() + 86400000), temp: 29, tempMin: 25, tempMax: 31, description: 'Sunny', icon: '01d', humidity: 70, windSpeed: 10, precipitation: 10 },
-      { date: new Date(Date.now() + 2*86400000), temp: 27, tempMin: 23, tempMax: 29, description: 'Cloudy', icon: '03d', humidity: 80, windSpeed: 15, precipitation: 60 },
-      { date: new Date(Date.now() + 3*86400000), temp: 26, tempMin: 22, tempMax: 28, description: 'Thunderstorm', icon: '11d', humidity: 85, windSpeed: 20, precipitation: 80 },
-      { date: new Date(Date.now() + 4*86400000), temp: 30, tempMin: 26, tempMax: 32, description: 'Sunny', icon: '01d', humidity: 65, windSpeed: 8, precipitation: 5 },
-      { date: new Date(Date.now() + 5*86400000), temp: 31, tempMin: 27, tempMax: 33, description: 'Sunny', icon: '01d', humidity: 60, windSpeed: 7, precipitation: 0 },
-      { date: new Date(Date.now() + 6*86400000), temp: 29, tempMin: 25, tempMax: 31, description: 'Cloudy', icon: '03d', humidity: 72, windSpeed: 9, precipitation: 15 },
-    ],
-    alerts: [
-      {
-        description: 'Heavy rainfall expected tomorrow afternoon. Consider postponing outdoor farming activities.',
-        type: 'rain',
-        severity: 'severe',
-      }
-    ],
-    location: 'Kano, Nigeria',
-  };
-
-  const mockCropAdvisory = {
-    immediateActions: [
-      { crop: 'Maize', action: 'Heavy rain expected. Ensure proper drainage to prevent waterlogging. Harvest ready crops immediately.', priority: 'high' },
-      { crop: 'Cassava', action: 'Check for waterlogging after rain.', priority: 'medium' },
-    ],
-    weatherRecommendations: [
-      { type: 'Rain', description: 'Delay fertilizer application until after rainfall.' },
-    ],
-    risks: [
-      { risk: 'Flooding', mitigation: 'Improve drainage in low-lying areas.' },
-    ],
-    optimalTiming: [
-      { activity: 'Planting', timing: 'Best done in the early morning this week.' },
-    ],
-    generalTips: [
-      'Monitor weather updates daily.',
-      'Store harvested crops in a dry place.',
-    ],
-  };
+  const [salutation, setSalutation] = useState('');
 
   useEffect(() => {
-    const translateMockData = async () => {
-      const ts = require('../services/translationService').default;
+    const translateData = async () => {
+      if (!weatherData) return;
+      
       const lang = currentLanguage;
+      
       // Weather
-      const translatedCurrentDesc = await ts.translateText(mockWeatherData.current.description, lang, 'en');
-      const forecastDescs = mockWeatherData.forecast.map(day => day.description);
-      const translatedForecastDescs = await ts.translateMultiple(forecastDescs, lang, 'en');
-      const alertDescs = mockWeatherData.alerts.map(alert => alert.description);
-      const translatedAlertDescs = alertDescs.length > 0 ? await ts.translateMultiple(alertDescs, lang, 'en') : [];
+      const translatedCurrentDesc = await translationService.translateText(weatherData.current.description, lang, 'en');
+      const forecastDescs = weatherData.forecast.map(day => day.description);
+      const translatedForecastDescs = await translationService.translateMultiple(forecastDescs, lang, 'en');
+      const alertDescs = weatherData.alerts.map(alert => alert.description);
+      const translatedAlertDescs = alertDescs.length > 0 ? await translationService.translateMultiple(alertDescs, lang, 'en') : [];
+      
       setTranslatedWeather({
-        ...mockWeatherData,
-        current: { ...mockWeatherData.current, description: translatedCurrentDesc },
-        forecast: mockWeatherData.forecast.map((day, i) => ({ ...day, description: translatedForecastDescs[i] })),
-        alerts: mockWeatherData.alerts.map((alert, i) => ({ ...alert, description: translatedAlertDescs[i] })),
+        ...weatherData,
+        current: { ...weatherData.current, description: translatedCurrentDesc },
+        forecast: weatherData.forecast.map((day, i) => ({ ...day, description: translatedForecastDescs[i] })),
+        alerts: weatherData.alerts.map((alert, i) => ({ ...alert, description: translatedAlertDescs[i] })),
       });
-      // Crop Advisory
-      const actions = mockCropAdvisory.immediateActions || [];
-      const actionTexts = actions.map(a => a.action);
-      const translatedActions = actionTexts.length > 0 ? await ts.translateMultiple(actionTexts, lang, 'en') : [];
-      const recs = mockCropAdvisory.weatherRecommendations || [];
-      const recTexts = recs.map(r => r.description);
-      const translatedRecs = recTexts.length > 0 ? await ts.translateMultiple(recTexts, lang, 'en') : [];
-      const risks = mockCropAdvisory.risks || [];
-      const riskTexts = risks.map(r => r.risk);
-      const mitigationTexts = risks.map(r => r.mitigation);
-      const translatedRisks = riskTexts.length > 0 ? await ts.translateMultiple(riskTexts, lang, 'en') : [];
-      const translatedMitigations = mitigationTexts.length > 0 ? await ts.translateMultiple(mitigationTexts, lang, 'en') : [];
-      const timings = mockCropAdvisory.optimalTiming || [];
-      const timingTexts = timings.map(t => t.timing);
-      const translatedTimings = timingTexts.length > 0 ? await ts.translateMultiple(timingTexts, lang, 'en') : [];
-      const tips = mockCropAdvisory.generalTips || [];
-      const translatedTips = tips.length > 0 ? await ts.translateMultiple(tips, lang, 'en') : [];
-      setTranslatedAdvisory({
-        ...mockCropAdvisory,
-        immediateActions: actions.map((a, i) => ({ ...a, action: translatedActions[i] })),
-        weatherRecommendations: recs.map((r, i) => ({ ...r, description: translatedRecs[i] })),
-        risks: risks.map((r, i) => ({ ...r, risk: translatedRisks[i], mitigation: translatedMitigations[i] })),
-        optimalTiming: timings.map((t, i) => ({ ...t, timing: translatedTimings[i] })),
-        generalTips: translatedTips
-      });
+      
+      // Crop Advisory (use actual data from WeatherContext)
+      if (cropAdvisory) {
+        const actions = cropAdvisory.immediateActions || [];
+        const actionTexts = actions.map(a => a.action);
+        const translatedActions = actionTexts.length > 0 ? await translationService.translateMultiple(actionTexts, lang, 'en') : [];
+        const recs = cropAdvisory.weatherRecommendations || [];
+        const recTexts = recs.map(r => r.description);
+        const translatedRecs = recTexts.length > 0 ? await translationService.translateMultiple(recTexts, lang, 'en') : [];
+        const risks = cropAdvisory.risks || [];
+        const riskTexts = risks.map(r => r.risk);
+        const mitigationTexts = risks.map(r => r.mitigation);
+        const translatedRisks = riskTexts.length > 0 ? await translationService.translateMultiple(riskTexts, lang, 'en') : [];
+        const translatedMitigations = mitigationTexts.length > 0 ? await translationService.translateMultiple(mitigationTexts, lang, 'en') : [];
+        const timings = cropAdvisory.optimalTiming || [];
+        const timingTexts = timings.map(t => t.timing);
+        const translatedTimings = timingTexts.length > 0 ? await translationService.translateMultiple(timingTexts, lang, 'en') : [];
+        const tips = cropAdvisory.generalTips || [];
+        const translatedTips = tips.length > 0 ? await translationService.translateMultiple(tips, lang, 'en') : [];
+        
+        setTranslatedAdvisory({
+          immediateActions: actions.map((a, i) => ({ ...a, action: translatedActions[i] })),
+          weatherRecommendations: recs.map((r, i) => ({ ...r, description: translatedRecs[i] })),
+          risks: risks.map((r, i) => ({ ...r, risk: translatedRisks[i], mitigation: translatedMitigations[i] })),
+          optimalTiming: timings.map((t, i) => ({ ...t, timing: translatedTimings[i] })),
+          generalTips: translatedTips
+        });
+      }
     };
-    translateMockData();
+    translateData();
+  }, [currentLanguage, weatherData, cropAdvisory]);
+
+  useEffect(() => {
+    const getCompleteSalutation = async () => {
+      const hour = new Date().getHours();
+      let salutationText = '';
+      
+      if (hour < 12) {
+        salutationText = 'Good Morning';
+      } else if (hour < 18) {
+        salutationText = 'Good Afternoon';
+      } else {
+        salutationText = 'Good Evening';
+      }
+      
+      // If it's English, return as is
+      if (currentLanguage === 'en') {
+        setSalutation(salutationText);
+        return;
+      }
+      
+      // For other languages, translate the complete phrase
+      try {
+        console.log('Translating salutation:', salutationText, 'to', currentLanguage);
+        const translatedSalutation = await translationService.translateText(salutationText, currentLanguage, 'en');
+        console.log('Translated salutation:', translatedSalutation);
+        setSalutation(translatedSalutation);
+      } catch (error) {
+        console.error('Error translating salutation:', error);
+        setSalutation(salutationText); // Fallback to English
+      }
+    };
+
+    getCompleteSalutation();
   }, [currentLanguage]);
 
   const getWeatherIcon = (iconCode, size = 'w-8 h-8') => {
-    const iconMap = {
-      '01d': <Sun className={`${size} text-yellow-500`} />,
-      '01n': <Sun className={`${size} text-yellow-400`} />,
-      '02d': <Cloud className={`${size} text-gray-500`} />,
-      '02n': <Cloud className={`${size} text-gray-400`} />,
-      '03d': <Cloud className={`${size} text-gray-500`} />,
-      '03n': <Cloud className={`${size} text-gray-400`} />,
-      '04d': <Cloud className={`${size} text-gray-600`} />,
-      '04n': <Cloud className={`${size} text-gray-500`} />,
-      '09d': <CloudRain className={`${size} text-blue-500`} />,
-      '09n': <CloudRain className={`${size} text-blue-400`} />,
-      '10d': <CloudRain className={`${size} text-blue-500`} />,
-      '10n': <CloudRain className={`${size} text-blue-400`} />,
-      '11d': <CloudRain className={`${size} text-purple-500`} />,
-      '11n': <CloudRain className={`${size} text-purple-400`} />,
-      '13d': <Cloud className={`${size} text-blue-300`} />,
-      '13n': <Cloud className={`${size} text-blue-200`} />,
-      '50d': <Cloud className={`${size} text-gray-400`} />,
-      '50n': <Cloud className={`${size} text-gray-300`} />,
-    };
-    return iconMap[iconCode] || <Sun className={`${size} text-yellow-500`} />;
+    const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+    return <img src={iconUrl} alt="weather" className={size} />;
   };
 
-  const getTimeOfDay = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Morning';
-    if (hour < 18) return 'Afternoon';
-    return 'Evening';
+  // Get custom weather icon with better contrast
+  const getCustomWeatherIcon = (weatherData, size = 'w-12 h-12') => {
+    const description = weatherData.description?.toLowerCase() || '';
+    const icon = weatherData.icon || '';
+    const iconSize = size;
+    
+    // Sunny/Clear weather
+    if (description.includes('clear') || description.includes('sun') || icon.includes('01')) {
+      return (
+        <div className={`${iconSize} flex items-center justify-center`}>
+          <div className="text-4xl font-bold text-yellow-600 drop-shadow-lg">
+            ☀️
+          </div>
+        </div>
+      );
+    }
+    
+    // Cloudy weather
+    if (description.includes('cloud') || icon.includes('02') || icon.includes('03') || icon.includes('04')) {
+      return (
+        <div className={`${iconSize} flex items-center justify-center`}>
+          <div className="text-4xl font-bold text-gray-700 drop-shadow-lg">
+            ☁️
+          </div>
+        </div>
+      );
+    }
+    
+    // Rainy weather
+    if (description.includes('rain') || description.includes('drizzle') || icon.includes('09') || icon.includes('10')) {
+      return (
+        <div className={`${iconSize} flex items-center justify-center`}>
+          <div className="text-4xl font-bold text-blue-700 drop-shadow-lg">
+            🌧️
+          </div>
+        </div>
+      );
+    }
+    
+    // Stormy weather
+    if (description.includes('storm') || description.includes('thunder') || icon.includes('11')) {
+      return (
+        <div className={`${iconSize} flex items-center justify-center`}>
+          <div className="text-4xl font-bold text-purple-700 drop-shadow-lg">
+            ⛈️
+          </div>
+        </div>
+      );
+    }
+    
+    // Snowy weather
+    if (description.includes('snow') || icon.includes('13')) {
+      return (
+        <div className={`${iconSize} flex items-center justify-center`}>
+          <div className="text-4xl font-bold text-cyan-700 drop-shadow-lg">
+            ❄️
+          </div>
+        </div>
+      );
+    }
+    
+    // Foggy/Misty weather
+    if (description.includes('fog') || description.includes('mist') || icon.includes('50')) {
+      return (
+        <div className={`${iconSize} flex items-center justify-center`}>
+          <div className="text-4xl font-bold text-slate-600 drop-shadow-lg">
+            🌫️
+          </div>
+        </div>
+      );
+    }
+    
+    // Partly cloudy
+    if (description.includes('partly') || icon.includes('02')) {
+      return (
+        <div className={`${iconSize} flex items-center justify-center`}>
+          <div className="text-4xl font-bold text-gray-600 drop-shadow-lg">
+            ⛅
+          </div>
+        </div>
+      );
+    }
+    
+    // Default (fallback)
+    return (
+      <div className={`${iconSize} flex items-center justify-center`}>
+        <div className="text-4xl font-bold text-blue-600 drop-shadow-lg">
+          🌤️
+        </div>
+      </div>
+    );
+  };
+
+  // Get weather-based color classes
+  const getWeatherColors = (weatherData) => {
+    const description = weatherData.description?.toLowerCase() || '';
+    const icon = weatherData.icon || '';
+    
+    // Sunny/Clear weather
+    if (description.includes('clear') || description.includes('sun') || icon.includes('01')) {
+      return {
+        bg: 'bg-gradient-to-b from-yellow-50 to-orange-100 hover:from-yellow-100 hover:to-orange-200',
+        text: 'text-orange-600',
+        border: 'border-orange-200'
+      };
+    }
+    
+    // Cloudy weather
+    if (description.includes('cloud') || icon.includes('02') || icon.includes('03') || icon.includes('04')) {
+      return {
+        bg: 'bg-gradient-to-b from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200',
+        text: 'text-gray-600',
+        border: 'border-gray-200'
+      };
+    }
+    
+    // Rainy weather
+    if (description.includes('rain') || description.includes('drizzle') || icon.includes('09') || icon.includes('10')) {
+      return {
+        bg: 'bg-gradient-to-b from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200',
+        text: 'text-blue-600',
+        border: 'border-blue-200'
+      };
+    }
+    
+    // Stormy weather
+    if (description.includes('storm') || description.includes('thunder') || icon.includes('11')) {
+      return {
+        bg: 'bg-gradient-to-b from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200',
+        text: 'text-purple-600',
+        border: 'border-purple-200'
+      };
+    }
+    
+    // Snowy weather
+    if (description.includes('snow') || icon.includes('13')) {
+      return {
+        bg: 'bg-gradient-to-b from-cyan-50 to-cyan-100 hover:from-cyan-100 hover:to-cyan-200',
+        text: 'text-cyan-600',
+        border: 'border-cyan-200'
+      };
+    }
+    
+    // Foggy/Misty weather
+    if (description.includes('fog') || description.includes('mist') || icon.includes('50')) {
+      return {
+        bg: 'bg-gradient-to-b from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200',
+        text: 'text-slate-600',
+        border: 'border-slate-200'
+      };
+    }
+    
+    // Default (fallback)
+    return {
+      bg: 'bg-gradient-to-b from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200',
+      text: 'text-blue-600',
+      border: 'border-blue-200'
+    };
   };
 
   const formatDate = (date) => {
@@ -192,124 +300,21 @@ const FarmWeatherApp = () => {
     </div>
   );
 
-  // const NavigationBar = () => (
-  //   <>
-  //     {/* Mobile Navigation */}
-  //     <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4">
-  //       <div className="flex items-center justify-between">
-  //         <div className="flex items-center gap-2">
-  //           <Cloud className="w-6 h-6" />
-  //           <span className="font-bold text-lg">FarmWeather</span>
-  //         </div>
-  //         <button 
-  //           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-  //           className="p-2 rounded-lg hover:bg-white/10"
-  //         >
-  //           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-  //         </button>
-  //       </div>
-  //       <p className="text-sm mt-1 text-white/90">Kano, Nigeria</p>
-  //     </div>
-
-  //     {/* Mobile Menu Overlay */}
-  //     {isMobileMenuOpen && (
-  //       <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setIsMobileMenuOpen(false)}>
-  //         <div className="fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-emerald-500 to-teal-600 text-white pt-20 px-4">
-  //           <nav className="space-y-2">
-  //             {[
-  //               { id: 'home', label: 'Home', icon: Home },
-  //               { id: 'forecast', label: 'Forecast', icon: BarChart3 },
-  //               { id: 'calendar', label: 'Calendar', icon: Calendar },
-  //               { id: 'community', label: 'Community', icon: Users },
-  //             ].map(({ id, label, icon: Icon }) => (
-  //               <button
-  //                 key={id}
-  //                 onClick={() => {
-  //                   setActiveTab(id);
-  //                   setIsMobileMenuOpen(false);
-  //                 }}
-  //                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-  //                   activeTab === id ? 'bg-white/20' : 'hover:bg-white/10'
-  //                 }`}
-  //               >
-  //                 <Icon className="w-5 h-5" />
-  //                 {label}
-  //               </button>
-  //             ))}
-  //           </nav>
-  //         </div>
-  //       </div>
-  //     )}
-
-  //     {/* Desktop Navigation */}
-  //     <div className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-4">
-  //       <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
-  //         <div className="flex items-center gap-3">
-  //           <Cloud className="w-8 h-8" />
-  //           <div>
-  //             <h1 className="font-bold text-xl">FarmWeather</h1>
-  //             <p className="text-sm text-white/90">Kano, Nigeria</p>
-  //           </div>
-  //         </div>
-          
-  //         <div className="hidden md:flex gap-6 items-center">
-  //   {navItems.map(({ id, to, label, icon: Icon }) => (
-  //     <NavLink
-  //       key={id}
-  //       to={to}
-  //       className={({ isActive }) =>
-  //         `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-  //           isActive ? 'bg-white/20 text-emerald-600' : 'hover:bg-white/10'
-  //         }`
-  //       }
-  //     >
-  //       <Icon className="w-5 h-5" />
-  //       {label}
-  //     </NavLink>
-  //   ))}
-  // </div>
-
-  //         <div className="flex items-center gap-3">
-  //           <button className="p-2 rounded-lg hover:bg-white/10">
-  //             <Bell className="w-5 h-5" />
-  //           </button>
-  //           <button className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20">
-  //             <Volume2 className="w-4 h-4" />
-  //             <span className="text-sm">Audio Alerts</span>
-  //           </button>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   </>
-  // );
-
-    // const BottomNavigation = () => (
-    //   <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 px-4 py-2 z-50">
-    //   <div className="flex items-center justify-around">
-    //     {bottomNavItems.map(({ id, to, label, icon: Icon }) => (
-    //       <NavLink
-    //         key={id}
-    //         to={to}
-    //         className={({ isActive }) =>
-    //           `flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-    //             isActive ? 'text-emerald-600' : 'text-gray-500'
-    //           }`
-    //         }
-    //       >
-    //         <Icon className="w-5 h-5 mb-1" />
-    //         <span className="text-xs">{label}</span>
-    //       </NavLink>
-    //     ))}
-    //   </div>
-    // </div>
-    // );
-
   // Use translatedWeather and translatedAdvisory for all UI rendering
-  const weather = translatedWeather || mockWeatherData;
-  const advisory = translatedAdvisory || mockCropAdvisory;
+  const weather = translatedWeather || weatherData;
+  const advisory = translatedAdvisory || cropAdvisory;
 
-  // Add a loading check for weather data and alerts
-  if (!weather || !weather.current || !weather.forecast || !Array.isArray(weather.alerts)) {
+  // Debug logging
+  useEffect(() => {
+    console.log('Current language:', currentLanguage);
+    console.log('Salutation state:', salutation);
+    console.log('Weather data:', weather);
+    console.log('Translated weather:', translatedWeather);
+    console.log('Weather alerts:', weather?.alerts);
+  }, [currentLanguage, salutation, weather, translatedWeather]);
+
+  // Add loading and error states
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
         <div className="text-gray-500 text-lg">{t('loading') || 'Loading...'}</div>
@@ -317,18 +322,37 @@ const FarmWeatherApp = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div className="text-red-500 text-lg">{error}</div>
+      </div>
+    );
+  }
+
+  // Add a check for weather data
+  if (!weather || !weather.current || !weather.forecast || !Array.isArray(weather.alerts)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div className="text-gray-500 text-lg">No weather data available</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="min-h-screen pt-[40px] md:pt-[50px] bg-gradient-to-br from-blue-50 via-white to-green-50">
       {/* <NavigationBar /> */}
       
-      <div className="pt-16 md:pt-20 pb-20 md:pb-8 px-4 md:px-6 max-w-7xl mx-auto">
+      <div className="pt-24 sm:pt-20 md:pt-16 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
-            {t('good') || 'Good'} {getTimeOfDay()}, {user.firstName}!
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-gray-900 mb-2">
+            {salutation || 'Good Morning'}, {user ? user.data.firstName : (t('guest') || 'Guest')}!
           </h1>
-          <div className="flex items-center gap-2 text-gray-600">
-            <p className="text-sm md:text-base">Kano, Nigeria</p>
+          <div className="flex flex-wrap items-center gap-2 text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
+              {weather?.location || 'Loading location...'}
+            </p>
             <div className="hidden md:flex items-center gap-2 ml-4">
               <button className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
                 <Headphones className="w-4 h-4" />
@@ -339,21 +363,41 @@ const FarmWeatherApp = () => {
         </div>
 
         {/* Weather Alert */}
-        {weather.alerts.length > 0 && (
+        {weather.alerts && weather.alerts.length > 0 && (
           <GlassCard className="mb-6 p-4 border-l-4 border-red-500 bg-red-50/80">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="font-semibold text-red-900 mb-1">{t('heavyRainAlert') || 'Heavy Rain Alert'}</h3>
+                <h3 className="font-semibold text-red-900 mb-1">
+                  {weather.alerts[0].type === 'rain' ? (t('rainAlert') || 'Rain Alert') :
+                   weather.alerts[0].type === 'wind' ? (t('windAlert') || 'Wind Alert') :
+                   weather.alerts[0].type === 'storm' ? (t('stormAlert') || 'Storm Alert') :
+                   weather.alerts[0].type === 'temperature' ? (t('temperatureAlert') || 'Temperature Alert') :
+                   weather.alerts[0].type === 'humidity' ? (t('humidityAlert') || 'Humidity Alert') :
+                   weather.alerts[0].type === 'farming' ? (t('farmingAlert') || 'Farming Alert') :
+                   (t('weatherAlert') || 'Weather Alert')}
+                </h3>
                 <p className="text-red-800 text-sm mb-3">
                   {weather.alerts[0].description}
                 </p>
                 <div className="flex gap-2">
                   <span className="bg-red-200 text-red-800 rounded-full px-3 py-1 text-xs font-medium">
-                    {t('rainAlert') || 'Rain Alert'}
+                    {weather.alerts[0].type === 'rain' ? (t('rainAlert') || 'Rain Alert') :
+                     weather.alerts[0].type === 'wind' ? (t('windAlert') || 'Wind Alert') :
+                     weather.alerts[0].type === 'storm' ? (t('stormAlert') || 'Storm Alert') :
+                     weather.alerts[0].type === 'temperature' ? (t('temperatureAlert') || 'Temperature Alert') :
+                     weather.alerts[0].type === 'humidity' ? (t('humidityAlert') || 'Humidity Alert') :
+                     weather.alerts[0].type === 'farming' ? (t('farmingAlert') || 'Farming Alert') :
+                     (t('weatherAlert') || 'Weather Alert')}
                   </span>
-                  <span className="bg-orange-200 text-orange-800 rounded-full px-3 py-1 text-xs font-medium">
-                    {t('highPriority') || 'High Priority'}
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    weather.alerts[0].severity === 'high' ? 'bg-red-200 text-red-800' :
+                    weather.alerts[0].severity === 'moderate' ? 'bg-orange-200 text-orange-800' :
+                    'bg-yellow-200 text-yellow-800'
+                  }`}>
+                    {weather.alerts[0].severity === 'high' ? (t('highPriority') || 'High Priority') :
+                     weather.alerts[0].severity === 'moderate' ? (t('mediumPriority') || 'Medium Priority') :
+                     (t('lowPriority') || 'Low Priority')}
                   </span>
                 </div>
               </div>
@@ -375,7 +419,7 @@ const FarmWeatherApp = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
-                    {getWeatherIcon(weather.current.icon, 'w-16 h-16')}
+                    {getCustomWeatherIcon(weather.current, 'w-16 h-16')}
                     <div>
                       <div className="text-4xl font-bold text-gray-900">
                         {weather.current.temperature}°C
@@ -410,21 +454,33 @@ const FarmWeatherApp = () => {
                   <div className="flex items-center justify-between py-2 border-b border-gray-200">
                     <div className="flex items-center gap-2">
                       <Sunrise className="w-4 h-4 text-orange-500" />
-                      <span className="text-sm">Sunrise</span>
+                      <span className="text-sm">{t('sunrise') || 'Sunrise'}</span>
                     </div>
-                    <span className="text-sm font-medium">6:25 AM</span>
+                    <span className="text-sm font-medium">
+                      {weather.current.sunrise ? weather.current.sunrise.toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                      }) : '--'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-gray-200">
                     <div className="flex items-center gap-2">
                       <Sunset className="w-4 h-4 text-orange-600" />
-                      <span className="text-sm">Sunset</span>
+                      <span className="text-sm">{t('sunset') || 'Sunset'}</span>
                     </div>
-                    <span className="text-sm font-medium">6:45 PM</span>
+                    <span className="text-sm font-medium">
+                      {weather.current.sunset ? weather.current.sunset.toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                      }) : '--'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm">Visibility</span>
+                      <span className="text-sm">{t('visibility') || 'Visibility'}</span>
                     </div>
                     <span className="text-sm font-medium">{weather.current.visibility} km</span>
                   </div>
@@ -435,20 +491,25 @@ const FarmWeatherApp = () => {
             {/* 7-Day Forecast */}
             <GlassCard className="p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('sevenDayForecast') || '7-Day Forecast'}</h2>
-              <div className="grid grid-cols-7 gap-2">
-                {weather.forecast.map((day, index) => (
-                  <div key={index} className="text-center p-3 rounded-lg bg-gradient-to-b from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-colors">
-                    <div className="font-medium text-sm text-gray-700 mb-2">
-                      {formatDate(day.date)}
+              <div className="grid grid-row-7 md:grid-cols-7 gap-2">
+                {weather.forecast.map((day, index) => {
+                  const weatherColors = getWeatherColors(day);
+                  return (
+                    <div key={index} className={`text-center p-3 rounded-lg ${weatherColors.bg} transition-colors`}>
+                      <div className="font-medium text-sm text-gray-700 mb-2">
+                        {formatDate(day.date)}
+                      </div>
+                      <div className="flex justify-center mb-3">
+                        <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 shadow-xl border-2 border-white/50">
+                          {getCustomWeatherIcon(day, 'w-12 h-12')}
+                        </div>
+                      </div>
+                      <div className="text-lg font-bold text-gray-900">{day.temp}°</div>
+                      <div className="text-xs text-gray-500">{day.tempMin}°</div>
+                      <div className={`text-xs mt-1 font-semibold ${weatherColors.text}`}>{day.precipitation}%</div>
                     </div>
-                    <div className="flex justify-center mb-2">
-                      {getWeatherIcon(day.icon, 'w-6 h-6')}
-                    </div>
-                    <div className="text-lg font-bold text-gray-900">{day.temp}°</div>
-                    <div className="text-xs text-gray-500">{day.tempMin}°</div>
-                    <div className="text-xs text-blue-600 mt-1">{day.precipitation}%</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </GlassCard>
           </div>
@@ -464,25 +525,41 @@ const FarmWeatherApp = () => {
               </div>
               
               <div className="space-y-4">
-                <div className="bg-white/50 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-1">Maize Farming</h3>
-                      <p className="text-sm text-gray-700">
-                        {advisory.immediateActions[0].action}
-                      </p>
+                {advisory && advisory.immediateActions && advisory.immediateActions.length > 0 ? (
+                  <div className="bg-white/50 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">
+                          {advisory.immediateActions[0].crop === 'general' ? (t('generalFarming') || 'General Farming') : advisory.immediateActions[0].crop}
+                        </h3>
+                        <p className="text-sm text-gray-700">
+                          {advisory.immediateActions[0].action}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-white/50 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">{t('farmingAdvisory') || 'Farming Advisory'}</h3>
+                        <p className="text-sm text-gray-700">
+                          Loading farming recommendations based on current weather conditions...
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="bg-emerald-600 text-white rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Headphones className="w-4 h-4" />
-                    <span className="font-medium">Listen to Audio</span>
+                    <span className="font-medium">{t('listenToAudio') || 'Listen to Audio'}</span>
                   </div>
                   <p className="text-sm text-emerald-100">
-                    Get detailed farming guidance in your local language
+                    {t('farmingGuidance') || 'Get detailed farming guidance in your local language'}
                   </p>
                 </div>
               </div>
