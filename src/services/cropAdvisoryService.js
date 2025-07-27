@@ -1,7 +1,7 @@
 // AI Crop Advisory Service using GitHub AI Models
 import OpenAI from "openai";
 
-const token = import.meta.env.VITE_GITHUB_GPT_API_KEY;
+const token = import.meta.env.VITE_GITHUB_GPT_API_KEY_ADVICE;
 const endpoint = "https://models.github.ai/inference";
 const model = "openai/gpt-4.1";
 
@@ -17,16 +17,33 @@ export const NIGERIAN_CROPS = {
 
 class CropAdvisoryService {
   constructor() {
-    this.client = new OpenAI({ 
-      baseURL: endpoint, 
-      apiKey: token,
-      dangerouslyAllowBrowser: true
-    });
+    this.client = null;
+    
+    if (token) {
+      try {
+        this.client = new OpenAI({ 
+          baseURL: endpoint, 
+          apiKey: token,
+          dangerouslyAllowBrowser: true
+        });
+      } catch (error) {
+        console.error('Failed to initialize GitHub AI client:', error);
+        this.client = null;
+      }
+    } else {
+      console.warn('GitHub AI API key not found. Using fallback crop advisory system.');
+    }
   }
 
   // Generate crop advisory based on weather and location
   async generateCropAdvisory(weatherData, location) {
     try {
+      // If no client available, use fallback
+      if (!this.client) {
+        console.log('Using fallback crop advisory system');
+        return this.getFallbackAdvisory(weatherData, location);
+      }
+
       const prompt = this.buildAdvisoryPrompt(weatherData, location);
       
       const response = await this.client.chat.completions.create({
@@ -50,7 +67,8 @@ class CropAdvisoryService {
       return this.parseAdvisoryResponse(response.choices[0].message.content);
     } catch (error) {
       console.error('Error generating crop advisory:', error);
-      return this.getFallbackAdvisory(weatherData);
+      console.log('Falling back to local advisory system');
+      return this.getFallbackAdvisory(weatherData, location);
     }
   }
 
@@ -118,26 +136,42 @@ class CropAdvisoryService {
     }
   }
 
-  // Fallback advisory when AI is unavailable
-  getFallbackAdvisory(weatherData) {
+  // Enhanced fallback advisory when AI is unavailable
+  getFallbackAdvisory(weatherData, location = 'Nigeria') {
     const currentTemp = weatherData.current.temperature;
     const humidity = weatherData.current.humidity;
-    const description = weatherData.current.description;
+    const description = weatherData.current.description.toLowerCase();
+    const windSpeed = weatherData.current.windSpeed;
+    const alerts = weatherData.alerts || [];
 
     const actions = [];
+    const recommendations = [];
+    const risks = [];
+    const timing = [];
+    const tips = [];
     
-    // Basic temperature-based advice
-    if (currentTemp > 30) {
+    // Temperature-based advice
+    if (currentTemp > 32) {
       actions.push({
         crop: 'general',
-        action: 'High temperature detected. Ensure adequate irrigation and consider shade for sensitive crops.',
+        action: 'High temperature detected. Water crops early morning and evening. Consider shade for sensitive crops like tomatoes and peppers.',
         priority: 'high'
       });
-    } else if (currentTemp < 15) {
+      risks.push({
+        risk: 'Heat stress on crops',
+        mitigation: 'Increase irrigation frequency and provide shade for sensitive crops'
+      });
+    } else if (currentTemp > 25 && currentTemp <= 32) {
       actions.push({
         crop: 'general',
-        action: 'Low temperature detected. Protect sensitive crops and consider delaying planting.',
-        priority: 'high'
+        action: 'Warm conditions are ideal for most crops. Continue regular watering and monitor for pests.',
+        priority: 'medium'
+      });
+    } else if (currentTemp < 20) {
+      actions.push({
+        crop: 'general',
+        action: 'Cool temperature detected. Good for planting and root development. Protect sensitive crops from cold.',
+        priority: 'medium'
       });
     }
 
@@ -145,26 +179,111 @@ class CropAdvisoryService {
     if (humidity > 80) {
       actions.push({
         crop: 'general',
-        action: 'High humidity detected. Monitor for fungal diseases and ensure good air circulation.',
+        action: 'High humidity detected. Monitor for fungal diseases like blight and mildew. Ensure good air circulation.',
+        priority: 'medium'
+      });
+      risks.push({
+        risk: 'Fungal diseases',
+        mitigation: 'Apply fungicides if needed and ensure proper spacing between plants'
+      });
+    } else if (humidity < 40) {
+      actions.push({
+        crop: 'general',
+        action: 'Low humidity detected. Increase irrigation and consider mulching to retain soil moisture.',
         priority: 'medium'
       });
     }
 
-    return {
-      immediateActions: actions,
-      weatherRecommendations: [
-        {
-          type: 'Temperature',
-          description: `Current temperature is ${currentTemp}°C. ${currentTemp > 25 ? 'Warm conditions are good for most crops.' : 'Cool conditions may slow growth.'}`
+    // Wind-based advice
+    if (windSpeed > 20) {
+      actions.push({
+        crop: 'general',
+        action: 'Strong winds detected. Secure farm structures and avoid spraying pesticides. Protect young plants.',
+        priority: 'high'
+      });
+      risks.push({
+        risk: 'Wind damage to crops',
+        mitigation: 'Use windbreaks and secure farm structures'
+      });
+    }
+
+    // Weather condition specific advice
+    if (description.includes('rain') || description.includes('drizzle')) {
+      actions.push({
+        crop: 'general',
+        action: 'Rainy conditions. Good for crops but avoid working in wet fields. Monitor for waterlogging.',
+        priority: 'medium'
+      });
+      timing.push({
+        activity: 'Planting',
+        timing: 'Wait for soil to dry slightly before planting to avoid compaction'
+      });
+    } else if (description.includes('sunny') || description.includes('clear')) {
+      actions.push({
+        crop: 'general',
+        action: 'Sunny conditions. Ensure adequate irrigation and protect crops from sunburn.',
+        priority: 'medium'
+      });
+      timing.push({
+        activity: 'Irrigation',
+        timing: 'Water early morning or evening to reduce evaporation'
+      });
+    }
+
+    // Location-specific advice
+    if (location.toLowerCase().includes('north')) {
+      recommendations.push({
+        type: 'Regional',
+        description: 'Northern region: Consider drought-resistant crops like millet and sorghum during dry periods.'
+      });
+    } else if (location.toLowerCase().includes('south')) {
+      recommendations.push({
+        type: 'Regional',
+        description: 'Southern region: High rainfall area. Ensure good drainage and consider crops like cassava and yam.'
+      });
+    }
+
+    // General weather recommendations
+    recommendations.push({
+      type: 'Temperature',
+      description: `Current temperature is ${currentTemp}°C. ${currentTemp > 25 ? 'Warm conditions are good for most crops.' : 'Cool conditions may slow growth but are good for root development.'}`
+    });
+
+    recommendations.push({
+      type: 'Humidity',
+      description: `Humidity is ${humidity}%. ${humidity > 70 ? 'High humidity - monitor for diseases.' : humidity < 50 ? 'Low humidity - increase irrigation.' : 'Optimal humidity for most crops.'}`
+    });
+
+    // General tips
+    tips.push('Monitor weather forecasts daily for planning farming activities');
+    tips.push('Adjust irrigation based on rainfall and temperature');
+    tips.push('Protect crops from extreme weather events');
+    tips.push('Use weather data to plan planting and harvesting times');
+    tips.push('Keep farm records to track weather impact on yields');
+
+    // Add alert-based advice
+    if (alerts.length > 0) {
+      alerts.forEach(alert => {
+        if (alert.type === 'rain' && alert.severity === 'high') {
+          actions.push({
+            crop: 'general',
+            action: 'Heavy rain expected. Secure farm structures and ensure drainage is working properly.',
+            priority: 'high'
+          });
         }
-      ],
-      risks: [],
-      optimalTiming: [],
-      generalTips: [
-        'Monitor weather conditions regularly',
-        'Adjust irrigation based on rainfall',
-        'Protect crops from extreme weather events'
-      ]
+      });
+    }
+
+    return {
+      immediateActions: actions.length > 0 ? actions : [{
+        crop: 'general',
+        action: 'Weather conditions are generally favorable for farming. Continue regular monitoring and maintenance.',
+        priority: 'low'
+      }],
+      weatherRecommendations: recommendations,
+      risks: risks,
+      optimalTiming: timing,
+      generalTips: tips
     };
   }
 

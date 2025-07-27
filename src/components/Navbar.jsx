@@ -12,7 +12,7 @@ import {
   LogIn,
   LogOut,
   User} from 'lucide-react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import LanguageSelector from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 
@@ -20,6 +20,10 @@ const NavigationBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { logout, user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if we're on auth routes (signin, signup, language selection)
+  const isAuthRoute = ['/signin', '/signup', '/language'].includes(location.pathname);
 
   const navItems = [
     { id: 'home', to: '/', label: 'Home', icon: Home },
@@ -36,6 +40,42 @@ const NavigationBar = () => {
     },
   ];
 
+  // If on auth route, show minimal navbar
+  if (isAuthRoute) {
+    return (
+      <>
+        {/* Mobile Top Bar - Minimal */}
+        <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CloudSunIcon className="w-6 h-6" />
+              <span className="font-bold text-lg">AgriCast</span>
+            </div>
+            <LanguageSelector className="w-32" />
+          </div>
+        </div>
+
+        {/* Desktop Navigation - Minimal */}
+        <div className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-4">
+          <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <CloudSunIcon className="w-8 h-8" />
+              <div>
+                <h1 className="font-bold text-xl">AgriCast</h1>
+              </div>
+            </div>
+
+            {/* Language Selector Only */}
+            <div className="flex items-center">
+              <LanguageSelector className="w-36" />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Mobile Top Bar */}
@@ -43,7 +83,7 @@ const NavigationBar = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CloudSunIcon className="w-6 h-6" />
-            <span className="font-bold text-lg">FarmWeather</span>
+            <span className="font-bold text-lg">AgriCast</span>
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -52,6 +92,7 @@ const NavigationBar = () => {
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
+       
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -113,8 +154,8 @@ const NavigationBar = () => {
           <div className="flex items-center gap-3">
             <CloudSunIcon className="w-8 h-8" />
             <div>
-              <h1 className="font-bold text-xl">FarmWeather</h1>
-              <p className="text-sm text-white/90">Kano, Nigeria</p>
+              <h1 className="font-bold text-xl">AgriCast</h1>
+           
             </div>
           </div>
 
@@ -170,6 +211,15 @@ const NavigationBar = () => {
 const BottomNavigation = () => {
   const { logout, user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if we're on auth routes
+  const isAuthRoute = ['/signin', '/signup', '/language'].includes(location.pathname);
+
+  // Don't show bottom navigation on auth routes
+  if (isAuthRoute) {
+    return null;
+  }
 
   const navItems = [
     { id: 'home', to: '/', label: 'Home', icon: Home },
