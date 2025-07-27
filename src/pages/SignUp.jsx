@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { signInUser, signUpUser } from '../services/userService';
+import { emailRegex, passwordRegex, phoneNumberRegex } from '../services/regex';
 
 const SignUp = () => {
 
@@ -47,15 +48,22 @@ const SignUp = () => {
       return false;
     }
 
-    if (email && !/\S+@\S+\.\S+/.test(email)) {
+    if (email && !emailRegex.test(email)) {
       setErrorMessage('Invalid email format.');
       return false;
     }
 
-    if (phoneNumber && !/^\d{7,15}$/.test(phoneNumber)) {
-      setErrorMessage('Invalid phone number format.');
+    if (phoneNumber && !phoneNumberRegex.test(phoneNumber)) {
+      setErrorMessage('Invalid phone number. Use +2348012345678 or 08012345678 format.');
       return false;
     }
+
+    if (!passwordRegex.test(password)) {
+    setErrorMessage(
+      'Password must be 8-30 chars, include upper- & lower-case letters, a digit, and a special char.'
+    );
+    return false;
+  }
 
     if (lga && lga.length < 2) {
       setErrorMessage('LGA should be at least 2 characters if provided.');
@@ -153,7 +161,7 @@ const SignUp = () => {
           </div>
           <div>
             <label className="block mb-1 font-semibold">Phone Number</label>
-            <input name='phoneNumber' value={formData.phoneNumber} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Phone number" />
+            <input name='phoneNumber' value={formData.phoneNumber} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="e.g. +2348012345678 or 08012345678" />
           </div>
         </div>
       </div>
@@ -163,19 +171,19 @@ const SignUp = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block mb-1 font-semibold">State</label>
-            <input name='state' value={formData.state} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="State" />
+            <input name='state' value={formData.state} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Ondo" />
           </div>
           <div>
             <label className="block mb-1 font-semibold">LGA</label>
-            <input name='lga' value={formData.lga} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="LGA (optional)" />
+            <input name='lga' value={formData.lga} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="e.g. Akure South" />
           </div>
           <div>
             <label className="block mb-1 font-semibold">City</label>
-            <input name='city' value={formData.city} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="City (optional)" />
+            <input name='city' value={formData.city} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Akure" />
           </div>
           <div className="sm:col-span-2">
             <label className="block mb-1 font-semibold">Address</label>
-            <input name='address' value={formData.address} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Full address (optional)" />
+            <input name='address' value={formData.address} onChange={handleChange} type="text" className="w-full border rounded px-3 py-2" placeholder="Full address" />
           </div>
         </div>
       </div>
@@ -197,7 +205,7 @@ const SignUp = () => {
     </form>
 
     <div className="mt-6 text-center text-sm">
-      Already have an account? <a href="/signin" className="text-blue-600 underline">Sign In</a>
+      Already have an account? <Link to="/signin" className="text-blue-600 underline">Sign In</Link>
     </div>
   </div>
 </div>

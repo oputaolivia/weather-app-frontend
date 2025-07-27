@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { signInUser, getUser } from '../services/userService';
 import { setCookie } from '../services/cookies';
@@ -119,7 +119,7 @@ const SignIn = () => {
 
         </form>
         <div className="mt-4 text-center text-sm">
-          Don't have an account? <a href="/signup" className="text-blue-600 underline">Sign Up</a>
+          Don't have an account? <Link to="/signup" className="text-blue-600 underline">Sign Up</Link>
         </div>
       </div>
     </div>
