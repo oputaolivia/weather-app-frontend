@@ -52,7 +52,6 @@ const NavigationBar = () => {
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
-        <p className="text-sm mt-1 text-white/90">Kano, Nigeria</p>
       </div>
 
       {/* Mobile Sidebar Overlay */}
