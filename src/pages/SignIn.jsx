@@ -27,10 +27,6 @@ const SignIn = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  useEffect(() => {
-    console.log("User updated in context:", user);
-  }, [user]);
-
   const validateInputs = () => {
     const { identifier, password } = formData;
 
@@ -66,15 +62,7 @@ const SignIn = () => {
 
     try {
       const authData = await signInUser(payload);
-      const token = authData?.data?.token;
-
-      if (!token) {
-        throw new Error("No token returned from server.");
-      }
-      setCookie('weatherAppUser', JSON.stringify(authData), 60);
-
-      const profileData = await getUser(token);
-      login(profileData);
+      await login(authData)
       navigate('/');
     } catch (error) {
       setErrorMessage(error.message || 'Oops! Sign-in failed.');
@@ -119,10 +107,16 @@ const SignIn = () => {
           <button
             type="submit"
             disabled={disableButton}
-            className={`w-full py-2 rounded font-bold text-white ${disableButton ? 'bg-gray-400' : 'bg-green-600'}`}
+            className={`w-full py-2 rounded font-bold text-white flex items-center justify-center gap-2 ${
+              disableButton ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+            }`}
           >
+            {disableButton && (
+              <span className="animate-spin h-4 w-4 border-t-2 border-white border-solid rounded-full"></span>
+            )}
             {disableButton ? 'Signing In...' : 'Sign In'}
           </button>
+
         </form>
         <div className="mt-4 text-center text-sm">
           Don't have an account? <a href="/signup" className="text-blue-600 underline">Sign Up</a>
