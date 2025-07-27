@@ -42,57 +42,125 @@ const FarmWeatherApp = () => {
 
   useEffect(() => {
     const translateData = async () => {
-      if (!weatherData) return;
+      if (!weatherData || currentLanguage === 'en') {
+        setTranslatedWeather(weatherData);
+        setTranslatedAdvisory(cropAdvisory);
+        return;
+      }
       
       const lang = currentLanguage;
       
-      // Weather
-      const translatedCurrentDesc = await translationService.translateText(weatherData.current.description, lang, 'en');
-      const forecastDescs = weatherData.forecast.map(day => day.description);
-      const translatedForecastDescs = await translationService.translateMultiple(forecastDescs, lang, 'en');
-      const alertDescs = weatherData.alerts.map(alert => alert.description);
-      const translatedAlertDescs = alertDescs.length > 0 ? await translationService.translateMultiple(alertDescs, lang, 'en') : [];
-      
-      setTranslatedWeather({
-        ...weatherData,
-        current: { ...weatherData.current, description: translatedCurrentDesc },
-        forecast: weatherData.forecast.map((day, i) => ({ ...day, description: translatedForecastDescs[i] })),
-        alerts: weatherData.alerts.map((alert, i) => ({ ...alert, description: translatedAlertDescs[i] })),
-      });
-      
-      // Crop Advisory (use actual data from WeatherContext)
-      if (cropAdvisory) {
-        const actions = cropAdvisory.immediateActions || [];
-        const actionTexts = actions.map(a => a.action);
-        const translatedActions = actionTexts.length > 0 ? await translationService.translateMultiple(actionTexts, lang, 'en') : [];
-        const recs = cropAdvisory.weatherRecommendations || [];
-        const recTexts = recs.map(r => r.description);
-        const translatedRecs = recTexts.length > 0 ? await translationService.translateMultiple(recTexts, lang, 'en') : [];
-        const risks = cropAdvisory.risks || [];
-        const riskTexts = risks.map(r => r.risk);
-        const mitigationTexts = risks.map(r => r.mitigation);
-        const translatedRisks = riskTexts.length > 0 ? await translationService.translateMultiple(riskTexts, lang, 'en') : [];
-        const translatedMitigations = mitigationTexts.length > 0 ? await translationService.translateMultiple(mitigationTexts, lang, 'en') : [];
-        const timings = cropAdvisory.optimalTiming || [];
-        const timingTexts = timings.map(t => t.timing);
-        const translatedTimings = timingTexts.length > 0 ? await translationService.translateMultiple(timingTexts, lang, 'en') : [];
-        const tips = cropAdvisory.generalTips || [];
-        const translatedTips = tips.length > 0 ? await translationService.translateMultiple(tips, lang, 'en') : [];
+      try {
+        // Batch all translations together for better performance
+        const allTextsToTranslate = [];
+        const textMap = new Map(); // Track which text belongs to what
         
-        setTranslatedAdvisory({
-          immediateActions: actions.map((a, i) => ({ ...a, action: translatedActions[i] })),
-          weatherRecommendations: recs.map((r, i) => ({ ...r, description: translatedRecs[i] })),
-          risks: risks.map((r, i) => ({ ...r, risk: translatedRisks[i], mitigation: translatedMitigations[i] })),
-          optimalTiming: timings.map((t, i) => ({ ...t, timing: translatedTimings[i] })),
-          generalTips: translatedTips
+        // Weather descriptions
+        allTextsToTranslate.push(weatherData.current.description);
+        textMap.set(weatherData.current.description, 'current');
+        
+        weatherData.forecast.forEach((day, index) => {
+          allTextsToTranslate.push(day.description);
+          textMap.set(day.description, `forecast_${index}`);
         });
+        
+        weatherData.alerts.forEach((alert, index) => {
+          allTextsToTranslate.push(alert.description);
+          textMap.set(alert.description, `alert_${index}`);
+        });
+        
+        // Crop advisory texts
+        if (cropAdvisory) {
+          (cropAdvisory.immediateActions || []).forEach((action, index) => {
+            allTextsToTranslate.push(action.action);
+            textMap.set(action.action, `action_${index}`);
+          });
+          
+          (cropAdvisory.weatherRecommendations || []).forEach((rec, index) => {
+            allTextsToTranslate.push(rec.description);
+            textMap.set(rec.description, `rec_${index}`);
+          });
+          
+          (cropAdvisory.risks || []).forEach((risk, index) => {
+            allTextsToTranslate.push(risk.risk);
+            textMap.set(risk.risk, `risk_${index}`);
+            allTextsToTranslate.push(risk.mitigation);
+            textMap.set(risk.mitigation, `mitigation_${index}`);
+          });
+          
+          (cropAdvisory.optimalTiming || []).forEach((timing, index) => {
+            allTextsToTranslate.push(timing.timing);
+            textMap.set(timing.timing, `timing_${index}`);
+          });
+          
+          (cropAdvisory.generalTips || []).forEach((tip, index) => {
+            allTextsToTranslate.push(tip);
+            textMap.set(tip, `tip_${index}`);
+          });
+        }
+        
+        // Translate all texts in one batch
+        const translatedTexts = await translationService.translateMultiple(allTextsToTranslate, lang, 'en');
+        
+        // Reconstruct weather data
+        const translatedWeather = {
+          ...weatherData,
+          current: { 
+            ...weatherData.current, 
+            description: translatedTexts[allTextsToTranslate.indexOf(weatherData.current.description)]
+          },
+          forecast: weatherData.forecast.map((day, i) => ({
+            ...day,
+            description: translatedTexts[allTextsToTranslate.indexOf(day.description)]
+          })),
+          alerts: weatherData.alerts.map((alert, i) => ({
+            ...alert,
+            description: translatedTexts[allTextsToTranslate.indexOf(alert.description)]
+          }))
+        };
+        
+        setTranslatedWeather(translatedWeather);
+        
+        // Reconstruct crop advisory
+        if (cropAdvisory) {
+          const translatedAdvisory = {
+            immediateActions: (cropAdvisory.immediateActions || []).map((action, i) => ({
+              ...action,
+              action: translatedTexts[allTextsToTranslate.indexOf(action.action)]
+            })),
+            weatherRecommendations: (cropAdvisory.weatherRecommendations || []).map((rec, i) => ({
+              ...rec,
+              description: translatedTexts[allTextsToTranslate.indexOf(rec.description)]
+            })),
+            risks: (cropAdvisory.risks || []).map((risk, i) => ({
+              ...risk,
+              risk: translatedTexts[allTextsToTranslate.indexOf(risk.risk)],
+              mitigation: translatedTexts[allTextsToTranslate.indexOf(risk.mitigation)]
+            })),
+            optimalTiming: (cropAdvisory.optimalTiming || []).map((timing, i) => ({
+              ...timing,
+              timing: translatedTexts[allTextsToTranslate.indexOf(timing.timing)]
+            })),
+            generalTips: (cropAdvisory.generalTips || []).map((tip, i) => 
+              translatedTexts[allTextsToTranslate.indexOf(tip)]
+            )
+          };
+          
+          setTranslatedAdvisory(translatedAdvisory);
+        }
+      } catch (error) {
+        console.error('Translation error:', error);
+        // Fallback to original data
+        setTranslatedWeather(weatherData);
+        setTranslatedAdvisory(cropAdvisory);
       }
     };
+    
     translateData();
   }, [currentLanguage, weatherData, cropAdvisory]);
 
   useEffect(() => {
-    const getCompleteSalutation = async () => {
+    const getCompleteSalutation = () => {
       const hour = new Date().getHours();
       let salutationText = '';
       
@@ -110,16 +178,9 @@ const FarmWeatherApp = () => {
         return;
       }
       
-      // For other languages, translate the complete phrase
-      try {
-        console.log('Translating salutation:', salutationText, 'to', currentLanguage);
-        const translatedSalutation = await translationService.translateText(salutationText, currentLanguage, 'en');
-        console.log('Translated salutation:', translatedSalutation);
-        setSalutation(translatedSalutation);
-      } catch (error) {
-        console.error('Error translating salutation:', error);
-        setSalutation(salutationText); // Fallback to English
-      }
+      // Use fallback translation (already cached)
+      const translatedSalutation = translationService.getFallbackTranslation(salutationText, currentLanguage);
+      setSalutation(translatedSalutation);
     };
 
     getCompleteSalutation();
@@ -566,7 +627,7 @@ const FarmWeatherApp = () => {
             </GlassCard>
 
             {/* Community Updates */}
-            <GlassCard className="p-6">
+            {/* <GlassCard className="p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('communityUpdates') || 'Community Updates'}</h2>
               <div className="space-y-4">
                 <div className="flex gap-3">
@@ -607,7 +668,7 @@ const FarmWeatherApp = () => {
                   </div>
                 </div>
               </div>
-            </GlassCard>
+            </GlassCard> */}
           </div>
         </div>
       </div>
