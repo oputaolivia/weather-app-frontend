@@ -5,12 +5,12 @@ import { useWeather } from '../contexts/WeatherContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import CropSelector from '../components/CropSelector';
 import LanguageSelector from '../components/LanguageSelector';
-import { getCookie, setCookie } from '../services/cookies';
+import { getCookie } from '../services/cookies';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const { user, logout, setUser } = useUser();
-  const token = JSON.parse(getCookie('weatherAppUser')).token;
-  console.log(token)
+  const token = JSON.parse(getCookie('weatherAppUser')).data.token
   const [formData, setFormData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -18,6 +18,7 @@ const Profile = () => {
   const [saveError, setSaveError] = useState('');
   const { userCrops } = useWeather();
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user?.data) {
@@ -67,10 +68,8 @@ const Profile = () => {
 
       const updatedUser = await updateUser(payload, token, user.data._id);
       setUser(updatedUser);
-      setCookie('weatherAppUser', updatedUser, );
       setSaveSuccess('Profile updated successfully.');
       setIsEditing(false);
-      console.log(user)
     } catch (err) {
       console.error('Error saving profile:', err);
       setSaveError('Failed to update profile. Please try again.');
@@ -81,6 +80,7 @@ const Profile = () => {
 
   const handleSignOut = () => {
     logout();
+    navigate('/signin');
   };
 
   if (!formData) return <div className="text-center py-8">Loading...</div>;
@@ -107,8 +107,8 @@ const Profile = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InputField label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} />
               <InputField label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} />
-              <InputField label="Email" name="email" value={formData.email} />
-              <InputField label="Phone Number" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} />
+              <InputField label="Email" name="email" value={formData.email} disabled />
+              <InputField label="Phone Number" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} disabled />
               <InputField label="City" name="city" value={formData.city} onChange={handleChange} />
               <InputField label="State" name="state" value={formData.state} onChange={handleChange} />
               <InputField label="LGA" name="lga" value={formData.lga} onChange={handleChange} />
@@ -136,9 +136,9 @@ const Profile = () => {
           <>
             <div className="space-y-2">
               <div>
-                <span className="font-bold text-lg">{formData.firstName} {formData.lastName}</span>
+                <span className="font-bold text-lg">{user.data.firstName} {user.data.lastName}</span>
               </div>
-              <div className="text-gray-500">{formData.email}</div>
+              <div className="text-gray-500">{user.data.email}</div>
             </div>
 
             {/* Language Settings */}

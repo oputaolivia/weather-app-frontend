@@ -9,7 +9,7 @@ import { UserProvider } from './contexts/UserContext';
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <UserProvider>
-      <LanguageProvider>
+    <LanguageProvider>
       <WeatherProvider>
         <App />
       </WeatherProvider>
