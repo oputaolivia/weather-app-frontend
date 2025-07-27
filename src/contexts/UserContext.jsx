@@ -1,14 +1,27 @@
 import { createContext, useContext, useState } from 'react';
+import { getCookie, setCookie, deleteCookie } from '../services/cookies';
 
 const UserContext = createContext();
 
-// This is to be enable access to user's information after signing-in so as to populate them in the profile page and the Home page for the salutaions.
-
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(() => {
+    const stored = getCookie('weatherAppUser');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  const logout = () => {
+    deleteCookie('weatherAppUser');
+    setUser(null);
+  };
+
+  const login = (userData) => {
+    deleteCookie('weatherAppUser');
+    setCookie('weatherAppUser', JSON.stringify(userData), 60);
+    setUser(userData);
+  };
 
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider value={{ user, login, logout, setUser }}>
       {children}
     </UserContext.Provider>
   );

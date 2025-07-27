@@ -1,11 +1,9 @@
-// AI Crop Advisory Service
-// Recommended AI APIs:
-// 1. OpenAI GPT-4 (https://platform.openai.com/) - Most comprehensive
-// 2. Anthropic Claude (https://www.anthropic.com/) - Good for structured responses
-// 3. Google Gemini (https://ai.google.dev/) - Good for multimodal content
+// AI Crop Advisory Service using GitHub AI Models
+import OpenAI from "openai";
 
-const OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY_HERE';
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+const token = import.meta.env.VITE_GITHUB_GPT_API_KEY;
+const endpoint = "https://models.github.ai/inference";
+const model = "openai/gpt-4.1";
 
 // Common Nigerian crops
 export const NIGERIAN_CROPS = {
@@ -19,54 +17,45 @@ export const NIGERIAN_CROPS = {
 
 class CropAdvisoryService {
   constructor() {
-    this.apiKey = OPENAI_API_KEY;
-    this.baseUrl = OPENAI_URL;
+    this.client = new OpenAI({ 
+      baseURL: endpoint, 
+      apiKey: token,
+      dangerouslyAllowBrowser: true
+    });
   }
 
-  // Generate crop advisory based on weather and user crops
-  async generateCropAdvisory(weatherData, userCrops, location) {
+  // Generate crop advisory based on weather and location
+  async generateCropAdvisory(weatherData, location) {
     try {
-      const prompt = this.buildAdvisoryPrompt(weatherData, userCrops, location);
+      const prompt = this.buildAdvisoryPrompt(weatherData, location);
       
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: `You are an expert agricultural advisor specializing in Nigerian farming conditions. 
-              Provide practical, actionable advice for farmers based on weather conditions and crop types. 
-              Focus on local farming practices and conditions. Respond in a structured, easy-to-understand format.`
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 1000,
-          temperature: 0.7
-        })
+      const response = await this.client.chat.completions.create({
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert agricultural advisor specializing in Nigerian farming conditions. 
+            Provide practical, actionable advice for farmers based on weather conditions and location. 
+            Focus on local farming practices and conditions. Respond in a structured, easy-to-understand format.`
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        top_p: 1,
+        model: model
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate advisory');
-      }
-
-      const data = await response.json();
-      return this.parseAdvisoryResponse(data.choices[0].message.content);
+      return this.parseAdvisoryResponse(response.choices[0].message.content);
     } catch (error) {
       console.error('Error generating crop advisory:', error);
-      return this.getFallbackAdvisory(weatherData, userCrops);
+      return this.getFallbackAdvisory(weatherData);
     }
   }
 
   // Build the prompt for AI advisory
-  buildAdvisoryPrompt(weatherData, userCrops, location) {
+  buildAdvisoryPrompt(weatherData, location) {
     const currentWeather = weatherData.current;
     const forecast = weatherData.forecast;
     const alerts = weatherData.alerts;
@@ -74,7 +63,6 @@ class CropAdvisoryService {
     return `
     Location: ${location}
     Current Weather: ${currentWeather.temperature}°C, ${currentWeather.description}, Humidity: ${currentWeather.humidity}%, Wind: ${currentWeather.windSpeed} km/h
-    User's Crops: ${userCrops.join(', ')}
     
     Weather Forecast (Next 7 days):
     ${forecast.map(day => 
@@ -83,16 +71,16 @@ class CropAdvisoryService {
     
     Weather Alerts: ${alerts.length > 0 ? alerts.map(alert => alert.description).join(', ') : 'None'}
     
-    Please provide:
-    1. Immediate actions needed for each crop
-    2. Weather-based recommendations
+    Based on this weather data and location, provide general farming advice for Nigerian farmers in this area. Focus on:
+    1. General farming practices suitable for current weather conditions
+    2. Weather-based recommendations for common Nigerian crops
     3. Potential risks and mitigation strategies
     4. Optimal timing for farming activities
     5. General farming tips for the current conditions
     
     Format the response as JSON with the following structure:
     {
-      "immediateActions": [{"crop": "crop_name", "action": "action_description", "priority": "high/medium/low"}],
+      "immediateActions": [{"crop": "general", "action": "action_description", "priority": "high/medium/low"}],
       "weatherRecommendations": [{"type": "recommendation_type", "description": "description"}],
       "risks": [{"risk": "risk_description", "mitigation": "mitigation_strategy"}],
       "optimalTiming": [{"activity": "activity_name", "timing": "timing_description"}],
@@ -131,7 +119,7 @@ class CropAdvisoryService {
   }
 
   // Fallback advisory when AI is unavailable
-  getFallbackAdvisory(weatherData, userCrops) {
+  getFallbackAdvisory(weatherData) {
     const currentTemp = weatherData.current.temperature;
     const humidity = weatherData.current.humidity;
     const description = weatherData.current.description;
@@ -141,13 +129,13 @@ class CropAdvisoryService {
     // Basic temperature-based advice
     if (currentTemp > 30) {
       actions.push({
-        crop: 'All Crops',
+        crop: 'general',
         action: 'High temperature detected. Ensure adequate irrigation and consider shade for sensitive crops.',
         priority: 'high'
       });
     } else if (currentTemp < 15) {
       actions.push({
-        crop: 'All Crops',
+        crop: 'general',
         action: 'Low temperature detected. Protect sensitive crops and consider delaying planting.',
         priority: 'high'
       });
@@ -156,7 +144,7 @@ class CropAdvisoryService {
     // Humidity-based advice
     if (humidity > 80) {
       actions.push({
-        crop: 'All Crops',
+        crop: 'general',
         action: 'High humidity detected. Monitor for fungal diseases and ensure good air circulation.',
         priority: 'medium'
       });

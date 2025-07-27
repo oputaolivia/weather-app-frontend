@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
-import { signInUser } from '../services/userService';
+import { signInUser, getUser } from '../services/userService';
+import { setCookie } from '../services/cookies';
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
@@ -12,11 +13,23 @@ const SignIn = () => {
   const [disableButton, setDisableButton] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const { setUser } = useUser();
+  const { user, login } = useUser();
+
+  // Check for language preference on component mount
+  useEffect(() => {
+    const selectedLanguage = localStorage.getItem('selectedLanguage');
+    if (!selectedLanguage) {
+      navigate('/language');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  useEffect(() => {
+    console.log("User updated in context:", user);
+  }, [user]);
 
   const validateInputs = () => {
     const { identifier, password } = formData;
@@ -43,16 +56,25 @@ const SignIn = () => {
 
     setDisableButton(true);
     const { identifier, password } = formData;
-    const payload = {password};
+    const payload = { password };
 
     if (/\S+@\S+\.\S+/.test(identifier)) {
       payload.email = identifier;
     } else {
       payload.phoneNumber = identifier;
     }
+
     try {
-      const data = await signInUser(payload);
-      setUser(data);
+      const authData = await signInUser(payload);
+      const token = authData?.data?.token;
+
+      if (!token) {
+        throw new Error("No token returned from server.");
+      }
+      setCookie('weatherAppUser', JSON.stringify(authData), 60);
+
+      const profileData = await getUser(token);
+      login(profileData);
       navigate('/');
     } catch (error) {
       setErrorMessage(error.message || 'Oops! Sign-in failed.');
@@ -60,6 +82,7 @@ const SignIn = () => {
       setDisableButton(false);
     }
   };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">

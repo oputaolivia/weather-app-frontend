@@ -1,10 +1,6 @@
-// LibreTranslate API Configuration
-// Get your API key from: https://libretranslate.com/
-// Alternative: Use Google Cloud Translation API or Microsoft Translator
-const LIBRETRANSLATE_API_KEY = 'YOUR_LIBRETRANSLATE_API_KEY_HERE';
-const LIBRETRANSLATE_URL = 'https://libretranslate.com/translate';
+// OpenAI API Configuration
+import OpenAI from "openai";
 
-// Language codes for Nigerian languages
 export const SUPPORTED_LANGUAGES = {
   en: { name: 'English', code: 'en' },
   yo: { name: 'Yoruba', code: 'yo' },
@@ -13,91 +9,135 @@ export const SUPPORTED_LANGUAGES = {
   pcm: { name: 'Nigerian Pidgin', code: 'pcm' }
 };
 
+// Use OpenAI API key from environment variable
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
 class TranslationService {
   constructor() {
-    this.apiKey = LIBRETRANSLATE_API_KEY;
-    this.baseUrl = LIBRETRANSLATE_URL;
+    if (!apiKey) {
+      console.error('OpenAI API key not found. Please set VITE_OPENAI_API_KEY in your environment variables.');
+    }
+    
+    this.client = new OpenAI({
+      apiKey: apiKey,
+      dangerouslyAllowBrowser: true // Only use this in development
+    });
   }
 
-  // Translate text to target language
+  // Clean translated text by removing quotes and extra formatting
+  cleanTranslatedText(text) {
+    if (!text) return text;
+    
+    // Remove surrounding quotes (both single and double)
+    let cleaned = text.trim();
+    cleaned = cleaned.replace(/^["']|["']$/g, ''); // Remove quotes at start/end
+    cleaned = cleaned.replace(/^["']|["']$/g, ''); // Remove any remaining quotes
+    
+    // Remove extra whitespace
+    cleaned = cleaned.trim();
+    
+    return cleaned;
+  }
+
+  // Translate text to target language using OpenAI API
   async translateText(text, targetLang, sourceLang = 'en') {
+    if (!text || targetLang === sourceLang) return text;
+    if (!apiKey) {
+      console.warn('OpenAI API key not available, returning original text');
+      return text;
+    }
+    
     try {
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          q: text,
-          source: sourceLang,
-          target: targetLang,
-          api_key: this.apiKey
-        })
+      const prompt = `Translate the following text from ${sourceLang} to ${targetLang}. Return ONLY the translated text without any quotes, formatting, or explanations.\n\nText: ${text}`;
+      
+      const response = await this.client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a professional translator. Translate the given text accurately and naturally to the target language. IMPORTANT: Return ONLY the translated text without any quotes, formatting, explanations, or additional text. Do not wrap the translation in quotes." 
+          },
+          { 
+            role: "user", 
+            content: prompt 
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 1000
       });
-
-      if (!response.ok) {
-        throw new Error('Translation failed');
-      }
-
-      const data = await response.json();
-      return data.translatedText;
+      
+      const translatedText = response.choices[0].message.content.trim();
+      return this.cleanTranslatedText(translatedText);
     } catch (error) {
       console.error('Translation error:', error);
-      // Fallback to original text if translation fails
-      return text;
+      return text; // Return original text on error
     }
   }
 
   // Translate multiple texts
   async translateMultiple(texts, targetLang, sourceLang = 'en') {
-    const translations = await Promise.all(
-      texts.map(text => this.translateText(text, targetLang, sourceLang))
-    );
-    return translations;
-  }
-
-  // Get supported languages
-  async getSupportedLanguages() {
+    if (!texts || texts.length === 0) return [];
+    if (!apiKey) {
+      console.warn('OpenAI API key not available, returning original texts');
+      return texts;
+    }
+    
     try {
-      const response = await fetch('https://libretranslate.com/languages');
-      if (!response.ok) {
-        return Object.values(SUPPORTED_LANGUAGES);
+      // If only one text, use translateText
+      if (texts.length === 1) {
+        return [await this.translateText(texts[0], targetLang, sourceLang)];
       }
       
-      const languages = await response.json();
-      return languages.filter(lang => 
-        Object.keys(SUPPORTED_LANGUAGES).includes(lang.code)
-      );
+      // For multiple texts, batch them in one request
+      const joined = texts.map((t, i) => `${i + 1}. ${t}`).join('\n');
+      const prompt = `Translate the following list of texts from ${sourceLang} to ${targetLang}. Return ONLY the translated texts as a numbered list, without any quotes or additional formatting.\n\n${joined}`;
+      
+      const response = await this.client.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a professional translator. Translate the given list of texts accurately and naturally to the target language. IMPORTANT: Return ONLY the translated texts as a numbered list, without any quotes, formatting, or additional text. Do not wrap any translations in quotes." 
+          },
+          { 
+            role: "user", 
+            content: prompt 
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      });
+      
+      // Parse the numbered list from the response
+      const content = response.choices[0].message.content.trim();
+      const lines = content.split(/\r?\n/).map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+      
+      // Clean each translated line
+      const cleanedLines = lines.map(line => this.cleanTranslatedText(line));
+      
+      // If the number of lines doesn't match, fallback to sequential
+      if (cleanedLines.length !== texts.length) {
+        console.warn('Batch parsing failed, falling back to individual requests');
+        return await Promise.all(texts.map(t => this.translateText(t, targetLang, sourceLang)));
+      }
+      
+      return cleanedLines;
     } catch (error) {
-      console.error('Error fetching supported languages:', error);
-      return Object.values(SUPPORTED_LANGUAGES);
+      console.error('Batch translation error:', error);
+      // Fallback to sequential translation
+      return await Promise.all(texts.map(t => this.translateText(t, targetLang, sourceLang)));
     }
   }
 
-  // Detect language of text
+  // Get supported languages (static)
+  async getSupportedLanguages() {
+    return Object.values(SUPPORTED_LANGUAGES);
+  }
+
+  // Detect language (not implemented)
   async detectLanguage(text) {
-    try {
-      const response = await fetch('https://libretranslate.com/detect', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          q: text,
-          api_key: this.apiKey
-        })
-      });
-
-      if (!response.ok) {
-        return 'en'; // Default to English
-      }
-
-      const data = await response.json();
-      return data[0]?.language || 'en';
-    } catch (error) {
-      console.error('Language detection error:', error);
-      return 'en';
-    }
+    // Optionally, use GPT for language detection
+    return 'en';
   }
 }
 
