@@ -31,7 +31,6 @@ import { getUser } from '../services/userService';
 import { getCookie } from '../services/cookies';
 import {useUser} from '../contexts/UserContext';
 import translationService from '../services/translationService';
-import elevenLabsService from '../services/elevenLabsService';
 
 const FarmWeatherApp = () => {
   const {user} = useUser();
@@ -40,8 +39,6 @@ const FarmWeatherApp = () => {
   const [translatedWeather, setTranslatedWeather] = useState(null);
   const [translatedAdvisory, setTranslatedAdvisory] = useState(null);
   const [salutation, setSalutation] = useState('');
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(true);
 
   useEffect(() => {
     const translateData = async () => {
@@ -316,31 +313,6 @@ const FarmWeatherApp = () => {
     console.log('Weather alerts:', weather?.alerts);
   }, [currentLanguage, salutation, weather, translatedWeather]);
 
-  // Auto-play high priority alerts
-  useEffect(() => {
-    if (weather?.alerts && weather.alerts.length > 0 && audioEnabled) {
-      const highPriorityAlert = weather.alerts.find(alert => 
-        alert.severity === 'high' || alert.severity === 'severe' || alert.severity === 'extreme'
-      );
-      
-      if (highPriorityAlert) {
-        // Auto-play high priority alerts after a short delay
-        const timer = setTimeout(async () => {
-          try {
-            setIsAudioPlaying(true);
-            await elevenLabsService.speakAlert(highPriorityAlert, currentLanguage);
-          } catch (error) {
-            console.error('Error auto-playing alert audio:', error);
-          } finally {
-            setIsAudioPlaying(false);
-          }
-        }, 2000); // 2 second delay
-
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [weather?.alerts, audioEnabled, currentLanguage]);
-
   // Add loading and error states
   if (loading) {
     return (
@@ -382,18 +354,9 @@ const FarmWeatherApp = () => {
               {weather?.location || 'Loading location...'}
             </p>
             <div className="hidden md:flex items-center gap-2 ml-4">
-              <button 
-                onClick={() => setAudioEnabled(!audioEnabled)}
-                className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-colors ${
-                  audioEnabled 
-                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
-              >
-                {audioEnabled ? <Volume2 className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                <span className="text-sm">
-                  {audioEnabled ? (t('audioAlerts') || 'Audio Alerts') : (t('audioDisabled') || 'Audio Disabled')}
-                </span>
+              <button className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                <Headphones className="w-4 h-4" />
+                <span className="text-sm">{t('audioAlerts') || 'Audio Alerts'}</span>
               </button>
             </div>
           </div>
@@ -405,50 +368,15 @@ const FarmWeatherApp = () => {
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-red-900">
-                    {weather.alerts[0].type === 'rain' ? (t('rainAlert') || 'Rain Alert') :
-                     weather.alerts[0].type === 'wind' ? (t('windAlert') || 'Wind Alert') :
-                     weather.alerts[0].type === 'storm' ? (t('stormAlert') || 'Storm Alert') :
-                     weather.alerts[0].type === 'temperature' ? (t('temperatureAlert') || 'Temperature Alert') :
-                     weather.alerts[0].type === 'humidity' ? (t('humidityAlert') || 'Humidity Alert') :
-                     weather.alerts[0].type === 'farming' ? (t('farmingAlert') || 'Farming Alert') :
-                     (t('weatherAlert') || 'Weather Alert')}
-                  </h3>
-                  <button
-                    onClick={async () => {
-                      if (!audioEnabled) return;
-                      setIsAudioPlaying(true);
-                      try {
-                        await elevenLabsService.speakAlert(weather.alerts[0], currentLanguage);
-                      } catch (error) {
-                        console.error('Error playing alert audio:', error);
-                      } finally {
-                        setIsAudioPlaying(false);
-                      }
-                    }}
-                    disabled={!audioEnabled || isAudioPlaying}
-                    className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                      isAudioPlaying 
-                        ? 'bg-red-300 text-red-700 cursor-not-allowed' 
-                        : audioEnabled 
-                          ? 'bg-red-200 text-red-800 hover:bg-red-300' 
-                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {isAudioPlaying ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                        {t('playing') || 'Playing...'}
-                      </>
-                    ) : (
-                      <>
-                        <Volume2 className="w-4 h-4" />
-                        {t('listen') || 'Listen'}
-                      </>
-                    )}
-                  </button>
-                </div>
+                <h3 className="font-semibold text-red-900 mb-1">
+                  {weather.alerts[0].type === 'rain' ? (t('rainAlert') || 'Rain Alert') :
+                   weather.alerts[0].type === 'wind' ? (t('windAlert') || 'Wind Alert') :
+                   weather.alerts[0].type === 'storm' ? (t('stormAlert') || 'Storm Alert') :
+                   weather.alerts[0].type === 'temperature' ? (t('temperatureAlert') || 'Temperature Alert') :
+                   weather.alerts[0].type === 'humidity' ? (t('humidityAlert') || 'Humidity Alert') :
+                   weather.alerts[0].type === 'farming' ? (t('farmingAlert') || 'Farming Alert') :
+                   (t('weatherAlert') || 'Weather Alert')}
+                </h3>
                 <p className="text-red-800 text-sm mb-3">
                   {weather.alerts[0].description}
                 </p>
@@ -626,59 +554,9 @@ const FarmWeatherApp = () => {
                 )}
                 
                 <div className="bg-emerald-600 text-white rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Headphones className="w-4 h-4" />
-                      <span className="font-medium">{t('listenToAudio') || 'Listen to Audio'}</span>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        if (!audioEnabled || !advisory) return;
-                        setIsAudioPlaying(true);
-                        try {
-                          // Create farming guidance text
-                          let guidanceText = 'Farming guidance for today: ';
-                          if (advisory.immediateActions && advisory.immediateActions.length > 0) {
-                            guidanceText += advisory.immediateActions[0].action + '. ';
-                          }
-                          if (advisory.weatherRecommendations && advisory.weatherRecommendations.length > 0) {
-                            guidanceText += 'Weather recommendation: ' + advisory.weatherRecommendations[0].description + '. ';
-                          }
-                          if (advisory.generalTips && advisory.generalTips.length > 0) {
-                            guidanceText += 'General tip: ' + advisory.generalTips[0] + '.';
-                          }
-                          
-                          const audioBlob = await elevenLabsService.textToSpeech(guidanceText, null, 'eleven_monolingual_v1');
-                          if (audioBlob) {
-                            elevenLabsService.playAudio(audioBlob);
-                          }
-                        } catch (error) {
-                          console.error('Error playing farming guidance audio:', error);
-                        } finally {
-                          setIsAudioPlaying(false);
-                        }
-                      }}
-                      disabled={!audioEnabled || isAudioPlaying || !advisory}
-                      className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                        isAudioPlaying 
-                          ? 'bg-emerald-700 text-emerald-200 cursor-not-allowed' 
-                          : audioEnabled && advisory
-                            ? 'bg-emerald-500 text-white hover:bg-emerald-700' 
-                            : 'bg-emerald-400 text-emerald-200 cursor-not-allowed'
-                      }`}
-                    >
-                      {isAudioPlaying ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          {t('playing') || 'Playing...'}
-                        </>
-                      ) : (
-                        <>
-                          <Volume2 className="w-4 h-4" />
-                          {t('play') || 'Play'}
-                        </>
-                      )}
-                    </button>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Headphones className="w-4 h-4" />
+                    <span className="font-medium">{t('listenToAudio') || 'Listen to Audio'}</span>
                   </div>
                   <p className="text-sm text-emerald-100">
                     {t('farmingGuidance') || 'Get detailed farming guidance in your local language'}
