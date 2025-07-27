@@ -62,7 +62,7 @@ const NavigationBar = () => {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className="fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-emerald-500 to-teal-600 text-white pt-20 px-4"
+            className="fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-emerald-500 to-teal-600 text-white pt-20 px-4 mt-20"
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="space-y-2 mb-4">

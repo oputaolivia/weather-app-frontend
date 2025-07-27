@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { signInUser, getUser } from '../services/userService';
+import { setCookie } from '../services/cookies';
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,14 @@ const SignIn = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
   const { user, login } = useUser();
+
+  // Check for language preference on component mount
+  useEffect(() => {
+    const selectedLanguage = localStorage.getItem('selectedLanguage');
+    if (!selectedLanguage) {
+      navigate('/language');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

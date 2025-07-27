@@ -12,7 +12,11 @@ export const useLanguage = () => {
 };
 
 export const LanguageProvider = ({ children }) => {
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [currentLanguage, setCurrentLanguage] = useState(() => {
+    // Load saved language preference from localStorage
+    const savedLanguage = localStorage.getItem('selectedLanguage');
+    return savedLanguage || 'en';
+  });
   const [translations, setTranslations] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,12 +74,182 @@ export const LanguageProvider = ({ children }) => {
       heavyRainfall: 'Heavy rainfall expected tomorrow afternoon. Consider postponing outdoor farming activities.',
       heavyRainAlert: 'Heavy Rain Alert',
       rainAlert: 'Rain Alert',
+      windAlert: 'Wind Alert',
+      stormAlert: 'Storm Alert',
+      temperatureAlert: 'Temperature Alert',
+      humidityAlert: 'Humidity Alert',
+      farmingAlert: 'Farming Alert',
       highPriority: 'High Priority',
+      mediumPriority: 'Medium Priority',
+      lowPriority: 'Low Priority',
       windAdvisory: 'Wind Advisory',
       strongWinds: 'Strong winds expected in the northern region. Secure your crops and farm structures.',
-      windAlert: 'Wind Alert',
       weatherAlerts: 'Weather Alerts',
       heavyRainfallExpected: 'Heavy Rainfall Expected',
+      
+      // Intelligent Farming Alerts
+      alertSummary: 'Alert Summary',
+      critical: 'Critical',
+      high: 'High',
+      medium: 'Medium',
+      low: 'Low',
+      recommendedActions: 'Recommended Actions',
+      noAlerts: 'No Active Alerts',
+      noAlertsMessage: 'Current weather conditions are favorable for farming activities.',
+      cropSelectionReminder: 'Crop Selection Reminder',
+      cropSelectionMessage: 'Select your crops in the profile to receive personalized farming alerts.',
+      
+      // Simple Weather Alerts
+      weatherTooHot: 'Weather Too Hot',
+      weatherTooHotMessage: 'Weather is very hot. Your crops need extra care.',
+      weatherTooCold: 'Weather Too Cold',
+      weatherTooColdMessage: 'Weather is cold. Protect your young plants.',
+      rainComing: 'Rain Coming',
+      rainComingMessage: 'Heavy rain is coming. Be careful with farm work.',
+      windTooStrong: 'Wind Too Strong',
+      windTooStrongMessage: 'Wind is very strong. Secure your farm tools.',
+      airTooWet: 'Air Too Wet',
+      airTooWetMessage: 'Air is very wet. Check your crops for sickness.',
+      
+      // Simple Crop Alerts
+      hotWeatherCrops: 'Hot Weather - Crops Need Care',
+      hotWeatherCropsMessage: 'Weather is hot. Your crops need more water and shade.',
+      coldWeatherCrops: 'Cold Weather - Protect Crops',
+      coldWeatherCropsMessage: 'Weather is cold. Protect your crops from cold.',
+      rainCrops: 'Rain Coming - Care for Crops',
+      rainCropsMessage: 'Rain is coming. Check your farm drainage.',
+      humidCrops: 'Wet Air - Check Crops',
+      humidCropsMessage: 'Air is very wet. Check your crops for sickness.',
+      goodFarmingWeather: 'Good Weather for Farming',
+      goodFarmingWeatherMessage: 'Weather is good for farming. Plant and work on your farm.',
+      
+      // Simple General Alerts
+      weatherGood: 'Weather is Good',
+      weatherGoodMessage: 'Weather is perfect for farming. Plant your crops now.',
+      needMoreWater: 'Farm Needs More Water',
+      needMoreWaterMessage: 'Your farm needs more water. Water your crops.',
+      
+      // Simple Seasonal Alerts
+      timeToPlant: 'Time to Plant',
+      timeToPlantMessage: 'It is planting season. Prepare your land and plant crops.',
+      timeToHarvest: 'Time to Harvest',
+      timeToHarvestMessage: 'It is harvesting time. Get your tools ready.',
+      
+      // Simple Action Items
+      waterFarmMore: 'Water your farm more',
+      putShadeOnCrops: 'Put shade on your crops',
+      workEarlyMorning: 'Work early in the morning',
+      coverSmallPlants: 'Cover small plants',
+      waitToPlant: 'Wait to plant',
+      useWarmWater: 'Use warm water',
+      dontWorkOutside: 'Do not work outside',
+      checkWaterFlow: 'Check water flow in your farm',
+      tieDownTools: 'Tie down your farm tools',
+      tieDownCrops: 'Tie down your crops',
+      checkFarmTools: 'Check your farm tools',
+      dontSprayNow: 'Do not spray now',
+      checkForSickness: 'Check for crop sickness',
+      letAirFlow: 'Let air flow around crops',
+      dontWaterMuch: 'Do not water too much',
+      plantNow: 'Plant your crops now',
+      putFertilizer: 'Put fertilizer on your farm',
+      removeWeeds: 'Remove weeds from your farm',
+      waterFarm: 'Water your farm',
+      checkSoil: 'Check your soil',
+      waterMorning: 'Water in the morning',
+      prepareLand: 'Prepare your land',
+      buyGoodSeeds: 'Buy good seeds',
+      planPlanting: 'Plan your planting',
+      getHarvestTools: 'Get your harvest tools',
+      checkCropReady: 'Check if crops are ready',
+      planHarvest: 'Plan your harvest',
+      waterCropsTwice: 'Water crops twice a day',
+      useShadeCloth: 'Use shade cloth',
+      plantEarlyMorning: 'Plant early in the morning',
+      delayPlanting: 'Delay planting',
+      coverYoungPlants: 'Cover young plants',
+      checkDrainage: 'Check farm drainage',
+      avoidPlanting: 'Avoid planting now',
+      protectSeeds: 'Protect your seeds',
+      spacePlantsWell: 'Space plants well',
+      checkForDisease: 'Check for crop disease',
+      improveAirFlow: 'Improve air flow',
+      
+      // Temperature Alerts
+      highTemperatureAlert: 'High Temperature Alert',
+      highTemperatureMessage: 'Temperatures are above optimal range for most crops. Take immediate action to protect your crops.',
+      lowTemperatureAlert: 'Low Temperature Alert',
+      lowTemperatureMessage: 'Temperatures are below optimal range. Protect sensitive crops and consider delaying planting.',
+      
+      // Rainfall Alerts
+      heavyRainfallMessage: 'Heavy rainfall is expected. Consider postponing outdoor farming activities and check drainage systems.',
+      
+      // Wind Alerts
+      strongWindsMessage: 'Strong winds detected. Secure your crops and farm structures to prevent damage.',
+      
+      // Humidity Alerts
+      highHumidityAlert: 'High Humidity Alert',
+      highHumidityMessage: 'High humidity conditions detected. Monitor crops for fungal diseases and ensure good air circulation.',
+      
+      // General Farming Alerts
+      optimalFarmingConditions: 'Optimal Farming Conditions',
+      optimalConditionsMessage: 'Current weather conditions are ideal for most farming activities. Proceed with planting and maintenance.',
+      irrigationNeeded: 'Irrigation Needed',
+      irrigationNeededMessage: 'Low humidity detected. Consider increasing irrigation to maintain optimal soil moisture.',
+      
+      // Seasonal Alerts
+      plantingSeason: 'Planting Season',
+      plantingSeasonMessage: 'It\'s the optimal time for planting most crops. Prepare your soil and select quality seeds.',
+      harvestingSeason: 'Harvesting Season',
+      harvestingSeasonMessage: 'Harvesting season is approaching. Prepare your tools and check crop maturity.',
+      
+      // Action Items
+      increaseIrrigation: 'Increase irrigation frequency',
+      provideShade: 'Provide shade for sensitive crops',
+      monitorCropStress: 'Monitor crops for stress signs',
+      protectSensitiveCrops: 'Protect sensitive crops from cold',
+      delayPlanting: 'Delay planting until conditions improve',
+      useRowCovers: 'Use row covers for protection',
+      postponeOutdoorActivities: 'Postpone outdoor farming activities',
+      checkDrainage: 'Check and clear drainage systems',
+      secureFarmStructures: 'Secure farm structures and equipment',
+      secureCrops: 'Secure crops and trellises',
+      avoidSpraying: 'Avoid spraying during windy conditions',
+      monitorDiseases: 'Monitor for fungal diseases',
+      improveAirCirculation: 'Improve air circulation around crops',
+      reduceIrrigation: 'Reduce irrigation to prevent waterlogging',
+      proceedWithPlanting: 'Proceed with planting activities',
+      maintainCurrentPractices: 'Maintain current farming practices',
+      monitorGrowth: 'Monitor crop growth and development',
+      checkSoilMoisture: 'Check soil moisture levels',
+      scheduleWatering: 'Schedule regular watering',
+      prepareSoil: 'Prepare soil for planting',
+      selectSeeds: 'Select quality seeds',
+      planPlantingSchedule: 'Plan your planting schedule',
+      prepareHarvestingTools: 'Prepare harvesting tools and equipment',
+      checkCropMaturity: 'Check crop maturity indicators',
+      planHarvestingSchedule: 'Plan your harvesting schedule',
+      followCropGuidelines: 'Follow crop-specific guidelines',
+      monitorCropHealth: 'Monitor crop health regularly',
+      adjustPractices: 'Adjust farming practices as needed',
+      
+      // Time and Units
+      today: 'Today',
+      tomorrow: 'Tomorrow',
+      retry: 'Retry',
+      refresh: 'Refresh',
+      forecastNotAvailable: 'Forecast data not available',
+      forecastFor: 'Forecast for',
+      precipitation: 'Precipitation',
+      
+      // Time of day
+      morning: 'Morning',
+      afternoon: 'Afternoon',
+      evening: 'Evening',
+      goodMorning: 'Good Morning',
+      goodAfternoon: 'Good Afternoon',
+      goodEvening: 'Good Evening',
+      guest: 'Guest',
       
       // Crop specific
       maizePlanting: 'Maize Planting',
@@ -151,6 +325,10 @@ export const LanguageProvider = ({ children }) => {
       visibility: 'Visibility',
       sunrise: 'Sunrise',
       sunset: 'Sunset',
+      generalFarming: 'General Farming',
+      farmingAdvisory: 'Farming Advisory',
+      listenToAudio: 'Listen to Audio',
+      farmingGuidance: 'Get detailed farming guidance in your local language',
       
       // Crop Advisory Sections
       immediateActions: 'Immediate Actions',
