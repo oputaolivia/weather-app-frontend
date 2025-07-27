@@ -12,7 +12,11 @@ export const useLanguage = () => {
 };
 
 export const LanguageProvider = ({ children }) => {
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [currentLanguage, setCurrentLanguage] = useState(() => {
+    // Load saved language preference from localStorage
+    const savedLanguage = localStorage.getItem('selectedLanguage');
+    return savedLanguage || 'en';
+  });
   const [translations, setTranslations] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 

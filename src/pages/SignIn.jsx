@@ -15,6 +15,14 @@ const SignIn = () => {
   const navigate = useNavigate();
   const { user, login } = useUser();
 
+  // Check for language preference on component mount
+  useEffect(() => {
+    const selectedLanguage = localStorage.getItem('selectedLanguage');
+    if (!selectedLanguage) {
+      navigate('/language');
+    }
+  }, [navigate]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };

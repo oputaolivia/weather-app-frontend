@@ -6,6 +6,7 @@ import Alerts from './pages/Alerts';
 import Profile from './pages/Profile';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import LanguageSelection from './pages/LanguageSelection';
 import './App.css';
 import { NavigationBar, BottomNavigation } from './components/Navbar';
 import { useUser } from './contexts/UserContext';
@@ -15,7 +16,7 @@ function App() {
   if (loading) return null;
 
   const PrivateRoute = ({ children }) => {
-    return user ? children : <Navigate to="/signin" />;
+    return user ? children : <Navigate to="/language" />;
   };
 
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/forecast" element={<PrivateRoute><Forecast /></PrivateRoute>} />
           <Route path="/alerts" element={<PrivateRoute><Alerts /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/language" element={<LanguageSelection />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
         </Routes>
