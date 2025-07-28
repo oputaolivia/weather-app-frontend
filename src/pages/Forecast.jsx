@@ -146,7 +146,7 @@ const Forecast = () => {
               <div className="w-full space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t('humidity')}:</span>
-                  <span>{day.humidity}{t('percent')}</span>
+                  <span>{Math.round(day.humidity)}{t('percent')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t('wind')}:</span>
@@ -155,7 +155,7 @@ const Forecast = () => {
                 {day.precipitation && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">{t('precipitation')}:</span>
-                    <span>{day.precipitation} {t('millimeters')}</span>
+                    <span>{Math.round(day.precipitation)} {t('millimeters')}</span>
                   </div>
                 )}
               </div>

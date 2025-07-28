@@ -502,7 +502,7 @@ const FarmWeatherApp = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Droplets className="w-4 h-4 text-blue-500" />
-                      <span>{weather.current.humidity}%</span>
+                      <span>{Math.round(weather.current.humidity)}%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Gauge className="w-4 h-4 text-gray-500" />
@@ -567,7 +567,7 @@ const FarmWeatherApp = () => {
                       </div>
                       <div className="text-lg font-bold text-gray-900">{day.temp}°</div>
                       <div className="text-xs text-gray-500">{day.tempMin}°</div>
-                      <div className={`text-xs mt-1 font-semibold ${weatherColors.text}`}>{day.precipitation}%</div>
+                      <div className={`text-xs mt-1 font-semibold ${weatherColors.text}`}>{Math.round(day.precipitation)}%</div>
                     </div>
                   );
                 })}
