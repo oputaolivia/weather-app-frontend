@@ -25,55 +25,48 @@ export const WeatherProvider = ({ children }) => {
 
   const { currentLanguage } = useLanguage();
   const { user } = useUser();
-  
-  const defaultLocation = {
-    lat: 6.5244,
-    lon: 3.3792,
-    name: 'Lagos, Nigeria'
-  };
 
   useEffect(() => {
-    // if (navigator.geolocation) {
-    //   navigator.geolocation.getCurrentPosition(
-    //     (position) => {
-    //       setLocation({
-    //         lat: position.coords.latitude,
-    //         lon: position.coords.longitude,
-    //         name: 'Your Location'
-    //       });
-    //     },
-    //     (error) => {
-    //       console.log('Geolocation error:', error);
-    //       setLocation(defaultLocation);
-    //     }
-    //   );
-    // } else {
-    //   setLocation(defaultLocation);
-    // }
-    // Use default location - no need for browser geolocation
-    // since we're using user profile location for weather data
-    setLocation(defaultLocation);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Geolocation error:', error);
+          setLocation(null);
+        }
+      );
+    } else {
+      setLocation(null);
+    }
   }, []);
 
   // Refetch and re-translate on location, language, or user change
   useEffect(() => {
-    if (location) {
-      fetchWeatherData();
-    }
-    // eslint-disable-next-line
+    fetchWeatherData();
   }, [location, currentLanguage, user]);
 
   // Fetch and translate weather data
   const fetchWeatherData = async () => {
-    if (!location) return;
+    console.log("State of the location before use", location)
     setLoading(true);
     setError(null);
     try {
       // Get user's state from user data, fallback to default
       const userState = user?.data?.location?.state || 'Lagos';
+      let weatherData;
       
       // Use the new weather service method with state parameter
-      const weatherData = await weatherService.getWeatherByState(userState);
+      if (!location){
+        console.log("No location found, using state fallback:", userState);
+        weatherData = await weatherService.getWeatherByState(userState);
+      } else {
+        weatherData = await weatherService.getWeatherByCoordinates(location.latitude, location.longitude);
+      }
 
       // Translate weather descriptions
       const lang = currentLanguage;
@@ -171,8 +164,8 @@ export const WeatherProvider = ({ children }) => {
       setLoading(true);
       const locationData = await weatherService.getWeatherByCity(cityName);
       setLocation({
-        lat: locationData.lat,
-        lon: locationData.lon,
+        latitude: locationData.lat,
+        longitude: locationData.lon,
         name: cityName
       });
     } catch (error) {
