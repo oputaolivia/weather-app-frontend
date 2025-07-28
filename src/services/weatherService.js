@@ -1,10 +1,12 @@
 // Weather API Configuration
 // New API endpoint for weather data
 const WEATHER_API_URL = 'https://weather-app-backend-fdzb.onrender.com/api/weather/by-state';
+const WEATHER_API_URL_CORD = 'https://weather-app-backend-fdzb.onrender.com/api/weather/by-coordinates';
 
 class WeatherService {
   constructor() {
     this.apiUrl = WEATHER_API_URL;
+    this.apiUrlCoord = WEATHER_API_URL_CORD;
   }
 
   // Get weather data by state (new method)
@@ -24,6 +26,30 @@ class WeatherService {
       
       const data = await response.json();
       return this.formatWeatherData(data);
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      throw error;
+    }
+  }
+
+  // get weather by coordinates
+  async getWeatherByCoordinates(lat, lon) {
+    console.log('Calling getWeatherByCoordinates with:', lat, lon);
+    try {
+      const response = await fetch(this.apiUrlCoord, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ latitude: lat, longitude: lon })
+      });
+        
+      if (!response.ok) {
+        throw new Error('Failed to fetch weather data');
+      }        
+      const data = await response.json();
+      return this.formatWeatherData(data);  
+      
     } catch (error) {
       console.error('Error fetching weather data:', error);
       throw error;
